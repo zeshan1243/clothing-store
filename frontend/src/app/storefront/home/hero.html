@@ -1,0 +1,80 @@
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero__bg" aria-hidden="true">
+    <div class="hero__glow hero__glow--volt"></div>
+    <div class="hero__glow hero__glow--sand"></div>
+    <span class="hero__watermark">{{ 'hero.watermark' | t }}</span>
+  </div>
+
+  <div class="container hero__inner">
+    <div class="hero__content">
+      <p class="hero__live">
+        <span class="live-dot" aria-hidden="true"></span>
+        {{ 'hero.live' | t }}
+      </p>
+
+      <h1 id="hero-title" class="hero__title" [attr.aria-label]="headlineText()">
+        @for (line of headline(); track line; let i = $index; let last = $last) {
+          <span class="hero__line" aria-hidden="true">
+            <span [style.--i]="i" [class.hero__accent]="last">{{ line }}</span>
+          </span>
+        }
+      </h1>
+
+      <p class="hero__sub">{{ 'hero.sub' | t }}</p>
+
+      <div class="hero__ctas">
+        <a #cta routerLink="/shop" [queryParams]="{ new: 1 }" class="btn btn--lg hero__cta"
+          (pointermove)="magnet($event, cta)" (pointerleave)="release(cta)">
+          {{ 'hero.cta' | t }} <app-icon name="arrow-right" [size]="18" class="hero__arrow" />
+        </a>
+        <a routerLink="/shop" class="btn btn--secondary btn--lg hero__ghost">{{ 'hero.browse' | t }}</a>
+      </div>
+
+      <ul class="hero__ticks" [attr.aria-label]="'hero.ticksLabel' | t">
+        <li><app-icon name="check" [size]="16" /> {{ 'hero.tickCod' | t }}</li>
+        <li><app-icon name="check" [size]="16" /> {{ 'hero.tickDoha' | t }}</li>
+        <li><app-icon name="check" [size]="16" /> {{ 'hero.tickExchanges' | t }}</li>
+      </ul>
+    </div>
+
+    <div class="hero__art">
+      <div class="arch">
+        @if (imageUrl) {
+          <img class="arch__img" [src]="imageUrl" alt="" fetchpriority="high" />
+        } @else if (lead(); as p) {
+          <img class="arch__img" [src]="p.image_url" [alt]="p | loc: 'name'" fetchpriority="high" width="800" height="1000" />
+        } @else {
+          <div class="arch__img arch__img--empty"></div>
+        }
+      </div>
+
+      <div class="badge-ring" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <defs><path id="hero-ring" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0" /></defs>
+          <!-- LTR base direction keeps the text on the circle in RTL pages; Arabic still shapes correctly. -->
+          <text direction="ltr"><textPath href="#hero-ring">{{ 'hero.ring' | t }}</textPath></text>
+        </svg>
+        <span>✦</span>
+      </div>
+
+      @if (lead(); as p) {
+        <a class="tag" [routerLink]="['/products', p.slug]">
+          <span class="tag__label overline">{{ 'hero.theDrop' | t }}</span>
+          <span class="tag__name">{{ p | loc: 'name' }}</span>
+          <span class="tag__row">
+            <span class="tag__price">{{ p.price | qar }}</span>
+            <span class="tag__go" aria-hidden="true"><app-icon name="arrow-right" [size]="16" /></span>
+          </span>
+        </a>
+      }
+
+      @if (thumb(); as t) {
+        <a class="thumb" [routerLink]="['/products', t.slug]" tabindex="-1" aria-hidden="true">
+          <img [src]="t.url" alt="" width="200" height="250" />
+        </a>
+      }
+    </div>
+  </div>
+
+  <span class="scroll-cue" aria-hidden="true"><app-icon name="chevron-down" [size]="20" /></span>
+</section>

@@ -1,0 +1,226 @@
+:host {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0 12px 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast, 120ms),
+    box-shadow var(--dur-fast, 120ms);
+
+  &--sm {
+    min-height: 38px;
+    font-size: 14px;
+  }
+
+  &--md {
+    min-height: 44px;
+  }
+
+  &--lg {
+    min-height: 52px;
+    padding-inline: 16px 14px;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--strong);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--strong);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--volt-400) 55%, transparent);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--danger-text, #b42318);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &__label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.is-placeholder {
+      color: var(--text-subtle, var(--text-muted));
+    }
+  }
+
+  &__hint {
+    flex: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  &__chevron {
+    flex: none;
+    color: var(--text-muted);
+    transition: transform var(--dur-base, 200ms) var(--ease-out, ease);
+  }
+}
+
+:host(.is-open) .trigger {
+  border-color: var(--strong);
+
+  .trigger__chevron {
+    transform: rotate(180deg);
+  }
+}
+
+.panel {
+  position: fixed;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--field);
+  color: var(--text);
+  box-shadow:
+    0 18px 40px -12px rgba(11, 11, 12, 0.28),
+    0 2px 8px rgba(11, 11, 12, 0.08);
+  animation: panelIn 160ms var(--ease-out, ease) both;
+  transform-origin: top center;
+
+  &--up {
+    transform-origin: bottom center;
+  }
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+
+  // !important: page-level form styles (.field input, .filters input…) must not leak into the panel.
+  input {
+    flex: 1;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 34px !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    background: transparent !important;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px !important;
+    box-shadow: none !important;
+  }
+}
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+
+.group {
+  position: sticky;
+  top: -6px;
+  z-index: 1;
+  margin: 0 -6px;
+  padding: 10px 14px 6px;
+  background: var(--field);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14.5px;
+  cursor: pointer;
+
+  &.is-active {
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+  }
+
+  &.is-selected {
+    font-weight: 700;
+  }
+
+  &.is-disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  &__label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__hint {
+    flex: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  &__check {
+    flex: none;
+    visibility: hidden;
+    color: var(--strong);
+  }
+
+  &.is-selected &__check {
+    visibility: visible;
+  }
+}
+
+.empty {
+  padding: 14px 10px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}

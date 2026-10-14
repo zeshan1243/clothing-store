@@ -1,0 +1,198 @@
+<div class="container page">
+  @if (!cart.items().length) {
+    <div class="empty">
+      <h1>{{ 'co.title' | t }}</h1>
+      <p>{{ 'co.emptyCart' | t }}</p>
+      <a routerLink="/shop" class="btn btn--lg">{{ 'co.startShopping' | t }}</a>
+    </div>
+  } @else {
+    <h1 class="title">{{ 'co.title' | t }}</h1>
+
+    <!-- Mobile: collapsed order summary at the top -->
+    <details class="mini-summary">
+      <summary>
+        <span><app-icon name="bag" [size]="18" /> {{ 'co.showSummary' | t }}</span>
+        <strong class="price">{{ (quote()?.grand_total ?? cart.total()) | qar }}</strong>
+      </summary>
+      <ng-container *ngTemplateOutlet="summaryBody" />
+    </details>
+
+    <div class="layout">
+      <form class="checkout-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        @if (account.customer(); as me) {
+          <p class="account-bar"><app-icon name="user" [size]="18" /> <span>{{ 'co.signedInAs' | t: { name: me.full_name } }}</span>
+            <button type="button" class="link" (click)="signOut()">{{ 'co.notYou' | t }}</button></p>
+        } @else {
+          <p class="account-bar"><app-icon name="user" [size]="18" /> <span>{{ 'co.signInPrompt' | t }}</span>
+            <a routerLink="/account/login" [queryParams]="{ returnUrl: '/checkout' }">{{ 'co.signInLink' | t }}</a></p>
+        }
+        <section class="block" aria-labelledby="contact-heading">
+          <h2 id="contact-heading"><span class="step">1</span> {{ 'co.contact' | t }}</h2>
+          <div class="field">
+            <label for="full_name">{{ 'co.fullName' | t }}</label>
+            <input id="full_name" formControlName="full_name" autocomplete="name"
+              [attr.aria-invalid]="invalid('full_name')" aria-describedby="full_name-err" />
+            @if (invalid('full_name')) {
+              <p class="field-error" id="full_name-err">{{ 'co.fullNameError' | t }}</p>
+            }
+          </div>
+          <div class="field">
+            <label for="phone">{{ 'co.mobile' | t }}</label>
+            <div class="phone" dir="ltr">
+              <span class="phone__prefix" aria-hidden="true">+974</span>
+              <input id="phone" type="tel" inputmode="tel" formControlName="phone" autocomplete="tel-national"
+                placeholder="5512 3456" [attr.aria-invalid]="invalid('phone')" aria-describedby="phone-hint phone-err" />
+            </div>
+            <p class="hint" id="phone-hint">{{ (account.signedIn() ? 'co.accountPhone' : 'co.mobileHint') | t }}</p>
+            @if (invalid('phone')) {
+              <p class="field-error" id="phone-err">{{ 'co.mobileError' | t }}</p>
+            }
+          </div>
+          <div class="field">
+            <label for="email">{{ 'co.email' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label>
+            <input id="email" type="email" inputmode="email" formControlName="email" autocomplete="email"
+              [attr.aria-invalid]="invalid('email')" aria-describedby="email-err" />
+            @if (invalid('email')) {
+              <p class="field-error" id="email-err">{{ 'co.emailError' | t }}</p>
+            }
+          </div>
+        </section>
+
+        <section class="block" aria-labelledby="delivery-heading">
+          <h2 id="delivery-heading"><span class="step">2</span> {{ 'co.delivery' | t }}</h2>
+          <div class="field">
+            <label for="area">{{ 'co.area' | t }}</label>
+            <app-select inputId="area" formControlName="area" size="lg" [searchable]="true" [options]="areaOptions()"
+              [placeholder]="'co.areaPlaceholder' | t" [searchPlaceholder]="'co.areaSearch' | t" [emptyText]="'common.noMatches' | t"
+              [invalid]="invalid('area')" describedBy="area-hint area-err" />
+            @if (invalid('area')) {
+              <p class="field-error" id="area-err">{{ 'co.areaError' | t }}</p>
+            } @else {
+              <p class="hint" id="area-hint">{{ 'co.areaHint' | t }}</p>
+            }
+          </div>
+          <div class="grid-3">
+            <div class="field">
+              <label for="zone">{{ 'co.zone' | t }}</label>
+              <input id="zone" inputmode="numeric" formControlName="zone" />
+            </div>
+            <div class="field">
+              <label for="street">{{ 'co.street' | t }}</label>
+              <input id="street" formControlName="street" />
+            </div>
+            <div class="field">
+              <label for="building">{{ 'co.building' | t }}</label>
+              <input id="building" formControlName="building" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="unit">{{ 'co.unit' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label>
+            <input id="unit" formControlName="unit" />
+          </div>
+          <div class="field">
+            <label for="landmark">{{ 'co.landmark' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label>
+            <input id="landmark" formControlName="landmark" [placeholder]="'co.landmarkPlaceholder' | t" />
+          </div>
+          <div class="field">
+            <label for="instructions">{{ 'co.instructions' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label>
+            <textarea id="instructions" rows="2" formControlName="instructions" [placeholder]="'co.instructionsPlaceholder' | t"></textarea>
+          </div>
+          @if (account.signedIn()) {
+            <label class="save-address"><input type="checkbox" [checked]="saveAddress()" (change)="saveAddress.set(!saveAddress())" /> {{ 'co.saveAddress' | t }}</label>
+          }
+        </section>
+
+        <section class="block" aria-labelledby="payment-heading">
+          <h2 id="payment-heading"><span class="step">3</span> {{ 'co.payment' | t }}</h2>
+          <div class="payment-option" role="radiogroup" [attr.aria-label]="'co.paymentMethod' | t">
+            <span class="radio" role="radio" aria-checked="true" tabindex="0"></span>
+            <span>
+              <strong>{{ 'common.cod' | t }}</strong><br />
+              <span class="muted">{{ 'co.codText' | t }}</span>
+            </span>
+            <app-icon name="banknote" [size]="24" class="payment-option__icon" />
+          </div>
+          <div class="field notes">
+            <label for="notes">{{ 'co.notes' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label>
+            <textarea id="notes" rows="2" formControlName="notes"></textarea>
+          </div>
+        </section>
+
+        @if (submitError(); as e) {
+          <p class="alert alert--error" role="alert">{{ e }}</p>
+        }
+
+        <div class="place-bar">
+          <button type="submit" class="btn btn--lg btn--block" [disabled]="submitting() || !quote() || hasProblems()">
+            @if (submitting()) {
+              {{ 'co.placing' | t }}
+            } @else if (quote(); as q) {
+              {{ 'co.placeTotal' | t: { total: (q.grand_total | qar) } }}
+            } @else {
+              {{ 'co.place' | t }}
+            }
+          </button>
+        </div>
+        <p class="muted small center">{{ 'co.agree' | t }} <a routerLink="/pages/terms">{{ 'co.terms' | t }}</a>.</p>
+      </form>
+
+      <aside class="summary" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">{{ 'co.summary' | t }}</h2>
+        <ng-container *ngTemplateOutlet="summaryBody" />
+      </aside>
+    </div>
+  }
+</div>
+
+<ng-template #summaryBody>
+  @if (quoteError(); as e) {
+    <p class="alert alert--error" role="alert">{{ e }} <button type="button" class="link" (click)="refreshQuote()">{{ 'common.retry' | t }}</button></p>
+  } @else if (!quote()) {
+    <p class="muted" role="status">{{ 'co.checking' | t }}</p>
+  } @else {
+    @let q = quote()!;
+    @if (hasProblems()) {
+      <p class="alert alert--error" role="alert">{{ 'co.changed' | t }} <a routerLink="/cart">{{ 'co.updateCart' | t }}</a> {{ 'co.toContinue' | t }}</p>
+    }
+    <ul class="lines">
+      @for (line of q.lines; track line.variant_id) {
+        <li class="line">
+          <span class="line__img">
+            @if (line.image_url) {
+              <img [src]="line.image_url" alt="" width="56" height="70" />
+            }
+            <span class="line__qty">{{ line.quantity }}</span>
+          </span>
+          <span class="line__body">
+            <span class="line__name">{{ line | loc: 'product_name' }}</span>
+            <span class="muted small">{{ line.colour }} · {{ line.size }}</span>
+            @if (line.problem) {
+              <span class="field-error">{{ problemText(line) }}</span>
+            }
+          </span>
+          <span class="price">{{ line.line_total | qar }}</span>
+        </li>
+      }
+    </ul>
+    <app-coupon-field [applied]="q.coupon ?? null" [error]="couponError()" [busy]="couponBusy()"
+      (apply)="applyCoupon($event)" (remove)="removeCoupon()" />
+    <dl class="totals">
+      <div><dt>{{ 'common.subtotal' | t }}</dt><dd class="price">{{ q.subtotal | qar }}</dd></div>
+      @if (+q.discount_amount > 0) {
+        <div class="discount"><dt>{{ 'coupon.discountCode' | t: { code: q.coupon?.code ?? '' } }}</dt><dd class="price">−{{ q.discount_amount | qar }}</dd></div>
+      }
+      @if (q.delivery_area; as a) {
+        <div>
+          <dt>{{ 'co.deliveryTo' | t: { area: (a | loc: 'name') } }}
+            @if (!a.is_free) { <span class="km">{{ 'co.deliveryKm' | t: { km: a.distance_km } }}</span> }
+          </dt>
+          <dd class="price">{{ +q.delivery_fee ? (q.delivery_fee | qar) : ('common.free' | t) }}</dd>
+        </div>
+      } @else {
+        <div><dt>{{ 'common.delivery' | t }}</dt><dd><a href="#area" class="choose" (click)="focusArea($event)">{{ 'co.chooseArea' | t }}</a></dd></div>
+      }
+      <div class="totals__grand"><dt>{{ 'common.total' | t }}</dt><dd class="price">{{ q.grand_total | qar }}</dd></div>
+    </dl>
+    <p class="cod"><app-icon name="banknote" [size]="18" /> {{ 'common.cod' | t }}</p>
+  }
+</ng-template>

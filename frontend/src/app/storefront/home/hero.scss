@@ -1,0 +1,575 @@
+// Light editorial hero. Only transform/opacity animate; everything readable without animation.
+
+:host {
+  display: flex;
+  flex-direction: column;
+  --px: 0;
+  --py: 0;
+  --scroll: 0;
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  // Fills whatever the first-screen block (.fold on the home page) leaves above the trust strip.
+  min-height: 520px;
+  padding-top: var(--header-h);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- Background ---------- */
+.hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hero__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+
+  &--volt {
+    width: min(70vw, 620px);
+    aspect-ratio: 1;
+    top: -18%;
+    right: 4%;
+    background: radial-gradient(circle, rgba(212, 255, 58, 0.55), transparent 65%);
+    opacity: 0.55;
+    transform: translate3d(calc(var(--px) * -18px), calc(var(--py) * -14px), 0);
+    animation: drift 22s ease-in-out infinite alternate;
+  }
+
+  &--sand {
+    width: min(80vw, 760px);
+    aspect-ratio: 1;
+    bottom: -40%;
+    left: -12%;
+    background: radial-gradient(circle, rgba(200, 179, 138, 0.45), transparent 65%);
+    animation: drift 26s ease-in-out -8s infinite alternate-reverse;
+  }
+}
+
+:host-context([data-theme='dark']) {
+  .hero__glow--volt {
+    opacity: 0.28;
+  }
+
+  .hero__glow--sand {
+    opacity: 0.35;
+  }
+}
+
+/* Oversized outlined word: texture, not content. */
+.hero__watermark {
+  position: absolute;
+  inset-inline-end: -2%;
+  bottom: -6%;
+  font-family: var(--font-display);
+  font-size: clamp(120px, 22vw, 360px);
+  font-weight: 700;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--watermark);
+  transform: translate3d(0, calc(var(--scroll) * 60px), 0);
+}
+
+/* ---------- Layout ---------- */
+.hero__inner {
+  flex: 1;
+  display: grid;
+  align-items: center;
+  gap: var(--space-12);
+  padding-block: var(--space-8) var(--space-12);
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: var(--space-16);
+    padding-block: var(--space-8) var(--space-16);
+  }
+}
+
+.hero__content {
+  transform: translate3d(0, calc(var(--scroll) * -40px), 0);
+}
+
+/* ---------- Content ---------- */
+.hero__live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-6);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--dark-block);
+  color: var(--bone-100);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: rise 500ms var(--ease-out) 150ms both;
+}
+
+.live-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--volt-400);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--volt-400);
+    animation: ping 1.8s var(--ease-out) infinite;
+  }
+}
+
+.hero__title {
+  margin: 0 0 var(--space-6);
+  font-size: clamp(54px, 9vw + 12px, 128px);
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.hero__line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+
+  /* Final state is the default, so the headline is readable even if the intro never runs. */
+  > span {
+    position: relative;
+    display: inline-block;
+    animation: lineUp 800ms var(--ease-out) both;
+    animation-delay: calc(250ms + var(--i) * 100ms);
+  }
+}
+
+/* Volt marker stroke sweeping in under the last word. */
+.hero__accent::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 64% -0.04em 10% 0.02em;
+  background: var(--volt-400);
+  border-radius: 999px;
+  transform: rotate(-1.5deg);
+  transform-origin: left center;
+  animation: highlight 800ms var(--ease-out) 1050ms both;
+}
+
+.hero__sub {
+  max-width: 38ch;
+  margin: 0 0 var(--space-8);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  animation: rise 500ms var(--ease-out) 650ms both;
+
+  @media (min-width: 1024px) {
+    font-size: 19px;
+  }
+}
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  animation: rise 500ms var(--ease-out) 800ms both;
+
+  .btn {
+    min-height: 56px;
+    padding-inline: var(--space-8);
+    border-radius: var(--radius-pill);
+  }
+
+  @media (max-width: 599px) {
+    .btn {
+      width: 100%;
+    }
+  }
+}
+
+.hero__cta {
+  transition:
+    transform 200ms var(--ease-out),
+    box-shadow var(--dur-base);
+
+  &:hover {
+    box-shadow: 0 12px 28px rgba(11, 11, 12, 0.22);
+  }
+
+  .hero__arrow {
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  &:hover .hero__arrow {
+    transform: translateX(5px);
+  }
+}
+
+.hero__ghost {
+  background: var(--glass);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.hero__ticks {
+  /* Phones get the full trust strip right below the hero, so skip the duplicate here. */
+  display: none;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  list-style: none;
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  animation: rise 500ms var(--ease-out) 950ms both;
+
+  @media (min-width: 1024px) {
+    display: flex;
+  }
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  app-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    padding: 2px;
+    border-radius: 50%;
+    background: var(--dark-block);
+    color: var(--volt-400);
+  }
+}
+
+/* ---------- Art: arch photo + tag + badge ---------- */
+.hero__art {
+  position: relative;
+  justify-self: center;
+  width: min(100%, 460px);
+  padding: 0 var(--space-6) var(--space-6);
+  animation: artIn 1000ms var(--ease-out) 200ms both;
+
+  @media (min-width: 1024px) {
+    justify-self: end;
+    width: min(100%, 500px);
+    margin-inline-end: var(--space-8);
+  }
+}
+
+.arch {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 999px 999px var(--radius-lg) var(--radius-lg);
+  background: var(--surface-strong);
+  box-shadow:
+    0 40px 80px -30px rgba(11, 11, 12, 0.35),
+    0 0 0 10px var(--glass-edge);
+  transform: translate3d(calc(var(--px) * -10px), calc(var(--py) * -8px), 0);
+
+  &__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: kenburns 16s ease-in-out infinite alternate;
+
+    &--empty {
+      background: linear-gradient(160deg, var(--surface-strong), var(--surface));
+    }
+  }
+}
+
+.badge-ring {
+  position: absolute;
+  top: 2%;
+  inset-inline-start: -4%;
+  display: grid;
+  place-items: center;
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  background: var(--dark-block);
+  color: var(--volt-400);
+  box-shadow: 0 16px 40px rgba(11, 11, 12, 0.25);
+  transform: translate3d(calc(var(--px) * 16px), calc(var(--py) * 12px), 0);
+  animation: pop 700ms var(--ease-out) 900ms both;
+
+  svg {
+    position: absolute;
+    inset: 6px;
+    animation: spin 20s linear infinite;
+  }
+
+  text {
+    fill: var(--bone-100);
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+  }
+
+  span {
+    font-size: 26px;
+  }
+
+  @media (max-width: 599px) {
+    width: 96px;
+    height: 96px;
+    inset-inline-start: 2%;
+
+    span {
+      font-size: 20px;
+    }
+  }
+}
+
+.tag {
+  position: absolute;
+  bottom: 0;
+  inset-inline-start: -2%;
+  display: grid;
+  gap: 2px;
+  min-width: 220px;
+  padding: var(--space-4) var(--space-4) var(--space-3) var(--space-5, 20px);
+  border-radius: var(--radius-md);
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-edge);
+  box-shadow: 0 20px 44px -12px rgba(11, 11, 12, 0.3);
+  text-decoration: none;
+  transform: translate3d(calc(var(--px) * 22px), calc(var(--py) * 16px), 0);
+  animation: rise 700ms var(--ease-out) 1150ms both;
+  transition: box-shadow var(--dur-base);
+
+  &:hover {
+    box-shadow: 0 24px 52px -12px rgba(11, 11, 12, 0.4);
+
+    .tag__go {
+      transform: translateX(3px);
+    }
+  }
+
+  &__label {
+    color: var(--volt-text);
+  }
+
+  &__name {
+    font-weight: 600;
+    max-width: 22ch;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-top: 2px;
+  }
+
+  &__price {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__go {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--dark-block);
+    color: var(--volt-400);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+}
+
+.thumb {
+  position: absolute;
+  top: 34%;
+  inset-inline-end: -6%;
+  width: 120px;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  background: var(--field);
+  box-shadow: 0 20px 40px -14px rgba(11, 11, 12, 0.35);
+  transform: translate3d(calc(var(--px) * 28px), calc(var(--py) * 20px), 0) rotate(4deg);
+  animation: rise 700ms var(--ease-out) 1300ms both;
+
+  img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: calc(var(--radius-md) - 6px);
+  }
+
+  @media (max-width: 599px) {
+    width: 92px;
+    inset-inline-end: -2%;
+  }
+}
+
+/* ---------- Scroll cue ---------- */
+.scroll-cue {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-4);
+  display: none;
+  color: var(--ink-400);
+  transform: translateX(-50%);
+  animation: nudge 2.4s ease-in-out 1.6s infinite;
+
+  @media (min-width: 1024px) {
+    display: block;
+  }
+}
+
+:host(.has-scrolled) .scroll-cue {
+  opacity: 0;
+  transition: opacity var(--dur-base);
+}
+
+/* Off-screen: pause only the looping effects, never the one-time intro. */
+:host(.is-paused) {
+  .hero__glow,
+  .arch__img,
+  .badge-ring svg,
+  .live-dot::after,
+  .scroll-cue {
+    animation-play-state: paused;
+  }
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes lineUp {
+  from {
+    transform: translateY(110%);
+  }
+}
+
+/* In right-to-left the marker sweeps in from the right. */
+:host-context([dir='rtl']) .hero__accent::before {
+  transform-origin: right center;
+  transform: rotate(1.5deg);
+}
+
+@keyframes highlight {
+  from {
+    transform: rotate(-1.5deg) scaleX(0);
+  }
+}
+
+@keyframes artIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.97);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-20deg);
+  }
+}
+
+@keyframes ping {
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.07);
+  }
+}
+
+@keyframes drift {
+  to {
+    translate: 40px 30px;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero *,
+  .hero *::before,
+  .hero *::after {
+    animation: none !important;
+  }
+}
+
+/* ---------- Fit the first screen on desktop ----------
+   The hero shares the viewport with the trust strip (home .fold), so on shorter laptop screens the
+   headline, spacing and photo also scale with the viewport height, not just its width. */
+@media (min-width: 1024px) {
+  .hero__inner {
+    padding-block: clamp(12px, 3svh, 32px) clamp(28px, 6svh, 64px);
+  }
+
+  .hero__live {
+    margin-bottom: clamp(12px, 2.5svh, 24px);
+  }
+
+  .hero__title {
+    font-size: max(54px, min(9vw + 12px, 128px, calc((100svh - 560px) * 0.3)));
+    margin-bottom: clamp(12px, 2.5svh, 24px);
+  }
+
+  .hero__sub {
+    margin-bottom: clamp(16px, 3.5svh, 32px);
+  }
+
+  .hero__art {
+    width: min(100%, 500px, calc((100svh - var(--header-h) - var(--announce-h) - 230px) * 0.8));
+  }
+}

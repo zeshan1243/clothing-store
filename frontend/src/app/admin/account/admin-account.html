@@ -1,0 +1,123 @@
+@if (loadError(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+}
+
+@if (profile(); as p) {
+<div class="account-page">
+  <!-- Identity -->
+  <section class="hero">
+    <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+    <div class="hero__main">
+      @if (editingName()) {
+        <form class="name-form" [formGroup]="nameForm" (ngSubmit)="saveName()" novalidate>
+          <input formControlName="name" aria-label="Your name" [attr.aria-invalid]="nameForm.controls.name.touched && nameForm.controls.name.invalid" />
+          <button type="submit" class="btn btn--small" [disabled]="savingName()">Save</button>
+          <button type="button" class="btn btn--secondary btn--small" (click)="editingName.set(false)">Cancel</button>
+        </form>
+      } @else {
+        <h1>{{ p.name }} <button type="button" class="edit" (click)="startEditName()" aria-label="Edit your name">Edit</button></h1>
+      }
+      <p class="hero__meta">
+        <span class="role role--{{ p.role }}">{{ p.role === 'OWNER' ? 'Owner' : 'Admin' }}</span>
+        <span>{{ p.email }}</span>
+      </p>
+      <p class="hero__meta muted">
+        <span>Member since {{ p.created_at | date: 'd MMM y' }}</span>
+        <span>Last sign-in {{ p.last_login_at ? (p.last_login_at | date: 'd MMM y, h:mm a') : '—' }}</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- Numbers -->
+  <ul class="stats">
+    <li><span class="stats__icon"><app-icon name="circle-check" [size]="20" /></span><strong>{{ p.stats.orders_confirmed }}</strong><span>Orders confirmed</span></li>
+    <li><span class="stats__icon"><app-icon name="truck" [size]="20" /></span><strong>{{ p.stats.deliveries_done }}</strong><span>Marked delivered</span></li>
+    <li>
+      <a routerLink="/admin/orders"><span class="stats__icon"><app-icon name="package" [size]="20" /></span><strong>{{ p.stats.open_assigned }}</strong><span>Open orders assigned to you</span></a>
+    </li>
+    <li><span class="stats__icon"><app-icon name="banknote" [size]="20" /></span><strong>{{ p.stats.cash_collected | qar }}</strong><span>Cash you recorded</span></li>
+    <li><span class="stats__icon"><app-icon name="clock" [size]="20" /></span><strong>{{ p.stats.actions_30d }}</strong><span>Actions in the last 30 days</span></li>
+  </ul>
+
+  <div class="columns">
+    <div class="col side">
+      <!-- Password -->
+      <form class="panel" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <h2>Change password</h2>
+        <p class="muted small">Use at least 12 characters. Mixing upper and lower case, numbers and symbols makes it stronger.</p>
+        <div class="field">
+          <label for="cur">Current password</label>
+          <input id="cur" [type]="showPasswords() ? 'text' : 'password'" formControlName="current_password" autocomplete="current-password"
+            [attr.aria-invalid]="invalid('current_password')" />
+        </div>
+        <div class="field">
+          <label for="new">New password</label>
+          <input id="new" [type]="showPasswords() ? 'text' : 'password'" formControlName="new_password" autocomplete="new-password"
+            [attr.aria-invalid]="invalid('new_password')" aria-describedby="pw-strength" />
+          @if (form.controls.new_password.value) {
+            <div class="meter" id="pw-strength" [attr.data-level]="strength()">
+              <span></span><span></span><span></span><span></span>
+              <em>{{ strengthLabel() }}</em>
+            </div>
+          }
+        </div>
+        <div class="field">
+          <label for="confirm">Confirm new password</label>
+          <input id="confirm" [type]="showPasswords() ? 'text' : 'password'" formControlName="confirm" autocomplete="new-password"
+            [attr.aria-invalid]="form.controls.confirm.touched && form.hasError('mismatch')" />
+          @if (form.controls.confirm.touched && form.hasError('mismatch')) {
+            <p class="field-error">Passwords don't match.</p>
+          }
+        </div>
+        <label class="checkbox show"><input type="checkbox" [checked]="showPasswords()" (change)="showPasswords.set(!showPasswords())" /> Show passwords</label>
+        <button type="submit" class="btn btn--small" [disabled]="busy()">{{ busy() ? 'Changing…' : 'Change password' }}</button>
+      </form>
+
+      <!-- Team -->
+      <section class="panel">
+        <h2>Team</h2>
+        <ul class="team">
+          @for (m of p.team; track m.id) {
+            <li [class.is-off]="!m.is_active">
+              <span class="avatar avatar--sm" aria-hidden="true">{{ m.name.slice(0, 1).toUpperCase() }}</span>
+              <span class="team__name">{{ m.name }} @if (m.id === p.id) { <span class="muted">(you)</span> }</span>
+              <span class="role role--{{ m.role }}">{{ m.role === 'OWNER' ? 'Owner' : 'Admin' }}</span>
+              <span class="muted small">{{ !m.is_active ? 'Deactivated' : m.last_login_at ? 'Last seen ' + (m.last_login_at | date: 'd MMM') : 'Never signed in' }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <!-- Activity -->
+    <section class="panel col activity-panel">
+      <h2>Your recent activity <span class="muted small">last {{ p.recent_activity.length }}</span></h2>
+      @if (p.recent_activity.length) {
+        <ol class="activity" tabindex="0" aria-label="Recent activity">
+          @for (a of p.recent_activity; track a.id) {
+            @let d = describe(a);
+            <li>
+              <span class="activity__icon"><app-icon [name]="d.icon" [size]="16" /></span>
+              <div>
+                <p>
+                  @if (link(a); as l) {
+                    <a [routerLink]="l">{{ d.text }}</a>
+                  } @else {
+                    {{ d.text }}
+                  }
+                  @if (a.label) { <span class="tag">{{ a.label }}</span> }
+                </p>
+                <time class="muted small">{{ a.created_at | date: 'd MMM, h:mm a' }}</time>
+              </div>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="muted">Nothing yet. Your actions (confirming orders, editing products…) will show here.</p>
+      }
+    </section>
+  </div>
+</div>
+} @else if (!loadError()) {
+  <p class="muted" role="status">Loading…</p>
+}

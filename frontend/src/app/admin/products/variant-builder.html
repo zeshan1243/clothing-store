@@ -1,0 +1,155 @@
+<!-- 1. Colours -->
+<div class="step">
+  <h3 class="step__title"><span class="num">1</span> Colours</h3>
+  <ul class="colours">
+    @for (c of colours(); track c.key) {
+      <li class="colour" [class.is-dup]="duplicateName(c)">
+        <label class="swatch" [style.background]="c.hex" [title]="'Pick a colour (' + c.hex + ')'">
+          <input type="color" [value]="c.hex" (input)="recolour(c, $any($event.target).value)" [attr.aria-label]="'Colour for ' + (c.name || 'new colour')" />
+        </label>
+        <input class="colour__name" [id]="'colour-name-' + c.key" [value]="c.name" placeholder="Colour name, e.g. Black"
+          (input)="renameColour(c, $any($event.target).value)" [attr.aria-invalid]="!c.name.trim() || duplicateName(c)" aria-label="Colour name" />
+        <button type="button" class="icon-btn" (click)="removeColour(c)" [attr.aria-label]="'Remove ' + (c.name || 'colour')"><app-icon name="x" [size]="16" /></button>
+      </li>
+    }
+  </ul>
+  <div class="presets">
+    <button type="button" class="add" (click)="addColour()"><app-icon name="plus" [size]="16" /> Add colour</button>
+    @if (unusedPresets().length) {
+      <span class="muted small">Quick add:</span>
+      @for (p of unusedPresets(); track p.name) {
+        <button type="button" class="preset" (click)="addColour(p.name, p.hex)"><span class="dot" [style.background]="p.hex"></span>{{ p.name }}</button>
+      }
+    }
+  </div>
+</div>
+
+<!-- 2. Sizes -->
+<div class="step">
+  <h3 class="step__title"><span class="num">2</span> Sizes</h3>
+  <div class="sizes" role="group" aria-label="Sizes">
+    @for (s of sizePresets; track s) {
+      <button type="button" class="size" [class.is-on]="isSize(s)" [attr.aria-pressed]="isSize(s)" (click)="toggleSize(s)">{{ s }}</button>
+    }
+    @for (s of customSizes(); track s) {
+      <button type="button" class="size is-on" aria-pressed="true" (click)="toggleSize(s)" [title]="'Remove size ' + s">{{ s }} <app-icon name="x" [size]="12" /></button>
+    }
+    <form class="custom" (submit)="$event.preventDefault(); addCustomSize()">
+      <input [value]="customSize" (input)="customSize = $any($event.target).value" placeholder="Other, e.g. 30" aria-label="Add another size" />
+      <button type="submit" class="add">Add</button>
+    </form>
+  </div>
+</div>
+
+<!-- 3. Stock grid -->
+<div class="step">
+  <h3 class="step__title"><span class="num">3</span> Stock <span class="muted small">{{ count() }} {{ count() === 1 ? 'variant' : 'variants' }}</span></h3>
+  @if (colours().length && sizes().length) {
+    <div class="grid-wrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th scope="col"><span class="visually-hidden">Colour</span></th>
+            @for (s of sizes(); track s) {
+              <th scope="col">{{ s }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of colours(); track c.key) {
+            <tr>
+              <th scope="row"><span class="dot" [style.background]="c.hex"></span>{{ c.name || 'New colour' }}</th>
+              @for (s of sizes(); track s) {
+                @let cl = cell(c, s);
+                <td>
+                  @if (cl.saved; as v) {
+                    <div class="cell" [class.is-hidden]="!v.is_active">
+                      <input type="number" min="0" inputmode="numeric" [value]="v.stock_quantity" [disabled]="busyId() === v.id"
+                        [class.is-low]="v.is_active && v.available_quantity > 0 && v.available_quantity <= low"
+                        [class.is-zero]="v.is_active && v.available_quantity === 0"
+                        [attr.aria-label]="c.name + ' ' + s + ' stock on hand'" (change)="adjustStock(v, $any($event.target))" />
+                      <span class="sku">{{ v.sku }}</span>
+                      @if (v.reserved_quantity) { <span class="note">{{ v.reserved_quantity }} reserved</span> }
+                      @if (!v.is_active) { <span class="note">hidden</span> }
+                    </div>
+                  } @else if (cl.row; as row) {
+                    <div class="cell cell--new">
+                      <input type="number" min="0" inputmode="numeric" [value]="row.controls['initial_stock'].value" placeholder="0"
+                        [attr.aria-label]="(c.name || 'New colour') + ' ' + s + ' starting stock'" (input)="setInitialStock(row, $any($event.target).value)" />
+                      <button type="button" class="skip" (click)="skip(c, s)" [attr.aria-label]="'Don\'t offer ' + (c.name || 'this colour') + ' in ' + s" title="Don't offer this combination">
+                        <app-icon name="x" [size]="12" />
+                      </button>
+                      <span class="sku">{{ row.controls['sku'].value }}</span>
+                    </div>
+                  } @else if (cl.skipped) {
+                    <button type="button" class="cell cell--off" (click)="unskip(c, s)" [attr.aria-label]="'Offer ' + (c.name || 'this colour') + ' in ' + s">
+                      <app-icon name="plus" [size]="16" /><span class="note">not offered</span>
+                    </button>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="legend">
+      @if (product()) {
+        <span class="key key--new"></span> New: starting stock (saved with the product).
+        <span class="key key--low"></span> Low (≤ {{ low }}) <span class="key key--zero"></span> Sold out.
+        Changing a saved number records a stock correction right away.
+      } @else {
+        Type the starting stock for each colour and size. Use ✕ on a box for a combination you don't sell.
+      }
+    </p>
+  } @else {
+    <p class="muted">Add at least one colour and one size.</p>
+  }
+</div>
+
+<!-- Advanced -->
+<div class="advanced">
+  <button type="button" class="advanced__toggle" (click)="advanced.set(!advanced())" [attr.aria-expanded]="advanced()">
+    <app-icon name="chevron-down" [size]="16" [class.is-open]="advanced()" /> Advanced: SKUs, low-stock alerts, hide or delete
+  </button>
+  @if (advanced()) {
+    <div class="advanced__body">
+      <div class="prefix">
+        <label>SKU prefix <input [value]="prefix()" (input)="setPrefix($any($event.target).value)" maxlength="8" /></label>
+        <span class="muted small">SKUs are made as <code>{{ prefix() || 'SKU' }}-COLOUR-SIZE</code>, e.g. <code>{{ prefix() || 'SKU' }}-BLA-M</code>.</span>
+        <button type="button" class="add" (click)="resetSkus()">Regenerate all SKUs</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Variant</th>
+              <th scope="col">SKU</th>
+              <th scope="col">Low-stock alert at</th>
+              <th scope="col">Shown in store</th>
+              <th scope="col"><span class="visually-hidden">Delete</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of rowList(); track item.row) {
+              <tr>
+                <td><span class="dot" [style.background]="item.colour?.hex ?? '#ccc'"></span> {{ item.row.controls['colour'].value || 'New colour' }} / {{ item.row.controls['size'].value }}
+                  @if (!item.saved) { <span class="tag">new</span> }</td>
+                <td><input class="sku-input" [value]="item.row.controls['sku'].value" (change)="editSku(item.row, $any($event.target).value)" [attr.aria-label]="'SKU for ' + item.row.controls['colour'].value + ' ' + item.row.controls['size'].value" /></td>
+                <td><input type="number" min="0" class="tiny" placeholder="3" [value]="item.row.controls['low_stock_threshold'].value ?? ''" (change)="setLowAt(item.row, $any($event.target).value)" aria-label="Low-stock alert at" /></td>
+                <td><input type="checkbox" [checked]="item.row.controls['is_active'].value" (change)="setActive(item.row, $any($event.target).checked)" aria-label="Shown in store" /></td>
+                <td class="end">
+                  <button type="button" class="remove" [disabled]="busyId() === item.saved?.id" (click)="deleteRow(item)"
+                    [title]="item.saved ? 'Delete (only if never ordered)' : 'Remove'" [attr.aria-label]="'Delete ' + item.row.controls['sku'].value">
+                    <app-icon name="trash" [size]="16" />
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small">Saved variants can be deleted only if they were never ordered or received on a supplier bill. Otherwise untick "Shown in store".</p>
+    </div>
+  }
+</div>

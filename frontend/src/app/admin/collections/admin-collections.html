@@ -1,0 +1,125 @@
+<div class="page-head">
+  <h1>Collections</h1>
+  @if (!editing()) {
+    <button type="button" class="btn btn--small" (click)="startNew()">Create collection</button>
+  }
+</div>
+
+@if (error(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+}
+
+@if (editing()) {
+  <form class="panel" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <h2>{{ isNew() ? 'New collection' : 'Edit collection' }}</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="col-name">Name (English)</label>
+        <input id="col-name" formControlName="name" placeholder="e.g. Summer Drop 01"
+          [attr.aria-invalid]="form.controls.name.touched && form.controls.name.invalid" />
+      </div>
+      <div class="field">
+        <label for="col-name-ar">Name (Arabic) <span class="muted">(optional)</span></label>
+        <input id="col-name-ar" formControlName="name_ar" dir="rtl" lang="ar" placeholder="مثال: إصدار الصيف" />
+      </div>
+      <div class="field">
+        <label for="col-desc">Description (English) <span class="muted">(optional)</span></label>
+        <textarea id="col-desc" rows="2" formControlName="description" placeholder="One line shown on the banner"></textarea>
+      </div>
+      <div class="field">
+        <label for="col-desc-ar">Description (Arabic) <span class="muted">(optional)</span></label>
+        <textarea id="col-desc-ar" rows="2" formControlName="description_ar" dir="rtl" lang="ar"></textarea>
+      </div>
+      <div class="field span-2">
+        <label for="col-image">Banner image URL <span class="muted">(optional — blank uses a product photo)</span></label>
+        <div class="image-row">
+          @if (form.controls.image_url.value) {
+            <img class="banner-thumb" [src]="form.controls.image_url.value" alt="" />
+          }
+          <input id="col-image" type="url" formControlName="image_url" placeholder="https://res.cloudinary.com/…"
+            [attr.aria-invalid]="form.controls.image_url.touched && form.controls.image_url.invalid" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="col-slug">URL slug <span class="muted">(blank = from name)</span></label>
+        <input id="col-slug" formControlName="slug" placeholder="summer-drop-01" />
+      </div>
+      <div class="field">
+        <label for="col-order">Display order</label>
+        <input id="col-order" type="number" formControlName="sort_order" />
+      </div>
+      <label class="checkbox"><input type="checkbox" formControlName="is_active" /> Visible in store</label>
+      <label class="checkbox"><input type="checkbox" formControlName="is_featured" /> Show on homepage</label>
+    </div>
+
+    <fieldset class="picker">
+      <legend>Products <span class="count">{{ selected().size }} selected</span></legend>
+      <div class="picker__tools filters">
+        <input type="search" placeholder="Search products or categories…" aria-label="Search products"
+          [ngModel]="search()" (ngModelChange)="search.set($event)" [ngModelOptions]="{ standalone: true }" />
+        <label class="checkbox"><input type="checkbox" [checked]="onlySelected()" (change)="onlySelected.set(!onlySelected())" /> Selected only</label>
+      </div>
+      <ul class="picker__list">
+        @for (p of pickerProducts(); track p.id) {
+          <li>
+            <label class="pick" [class.is-on]="selected().has(p.id)">
+              <input type="checkbox" [checked]="selected().has(p.id)" (change)="toggleProduct(p.id)" />
+              @if (p.image_url) { <img [src]="p.image_url" alt="" width="40" height="50" /> } @else { <span class="noimg"></span> }
+              <span class="pick__name">{{ p.name }}<span class="muted">{{ p.category_name ?? 'No category' }}</span></span>
+              <span class="pick__price">{{ (p.sale_price ?? p.base_price) | qar }}</span>
+              @if (p.status !== 'ACTIVE') { <span class="pill">{{ p.status | lowercase }}</span> }
+            </label>
+          </li>
+        } @empty {
+          <li class="muted empty">No products match.</li>
+        }
+      </ul>
+      <p class="muted small">Only <strong>active</strong> products appear in the store; drafts can be added now and show up once published.</p>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="btn btn--small" [disabled]="saving()">{{ saving() ? 'Saving…' : (isNew() ? 'Create collection' : 'Save changes') }}</button>
+      <button type="button" class="btn btn--secondary btn--small" (click)="editing.set(null)">Cancel</button>
+    </div>
+  </form>
+}
+
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Collection</th>
+        <th scope="col">Products</th>
+        <th scope="col">Homepage</th>
+        <th scope="col">Visible</th>
+        <th scope="col"><span class="visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of collections(); track c.id) {
+        <tr>
+          <td>
+            <div class="col-cell">
+              @if (c.cover_image_url) { <img class="banner-thumb" [src]="c.cover_image_url" alt="" /> } @else { <span class="banner-thumb noimg"></span> }
+              <span><strong>{{ c.name }}</strong><br /><a class="muted small" [href]="'/collections/' + c.slug" target="_blank" rel="noopener">/collections/{{ c.slug }} ↗</a></span>
+            </div>
+          </td>
+          <td>
+            <div class="stack">
+              @for (p of thumbs(c); track p.id) { <img [src]="p.image_url" alt="" [title]="p.name" /> }
+              <span class="muted small">{{ c.product_count }}</span>
+            </div>
+          </td>
+          <td><button type="button" class="toggle" [class.is-on]="c.is_featured" (click)="toggleFlag(c, 'is_featured')" [attr.aria-pressed]="c.is_featured">{{ c.is_featured ? 'Featured' : 'No' }}</button></td>
+          <td><button type="button" class="toggle" [class.is-on]="c.is_active" (click)="toggleFlag(c, 'is_active')" [attr.aria-pressed]="c.is_active">{{ c.is_active ? 'Visible' : 'Hidden' }}</button></td>
+          <td class="row-actions">
+            <button type="button" class="btn btn--secondary btn--small" (click)="edit(c)">Edit</button>
+            <button type="button" class="btn btn--secondary btn--small danger" (click)="remove(c)">Delete</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr><td colspan="5" class="empty-state">{{ loading() ? 'Loading…' : 'No collections yet. Group products into drops or edits, e.g. “Summer Drop 01”.' }}</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

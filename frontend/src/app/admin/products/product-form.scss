@@ -1,0 +1,262 @@
+.small {
+  font-size: 0.875rem;
+}
+
+.images {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.image-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+
+  input {
+    flex: 1 1 200px;
+    min-height: 40px;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font: inherit;
+
+    &.narrow {
+      flex: 0 1 120px;
+    }
+  }
+}
+
+.row-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.generator {
+  display: grid;
+  gap: 0 var(--space-3);
+  align-items: end;
+  margin-bottom: var(--space-4);
+
+  @media (min-width: 900px) {
+    grid-template-columns: 2fr 1fr 120px auto;
+
+    .btn {
+      margin-bottom: var(--space-4);
+    }
+  }
+}
+
+.table .narrow {
+  min-width: 90px;
+}
+
+.table .tiny {
+  min-width: 64px;
+  max-width: 80px;
+}
+
+.save-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+
+  &[aria-selected='true'] {
+    color: var(--text);
+    border-bottom-color: var(--ink-950);
+  }
+
+  &__count {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--ink-950);
+    color: var(--volt-400);
+    font-size: 12px;
+    line-height: 20px;
+  }
+}
+
+.sub {
+  font-size: 15px;
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.percent-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.percent-input {
+  position: relative;
+  width: 110px;
+
+  input {
+    width: 100%;
+    padding-inline-end: 32px;
+  }
+
+  span {
+    position: absolute;
+    inset-inline-end: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+}
+
+.chip-btn {
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &.is-on {
+    border-color: var(--ink-950);
+    background: var(--ink-950);
+    color: var(--white);
+  }
+}
+
+.link-btn {
+  border: 0;
+  background: none;
+  padding: var(--space-2);
+  font: inherit;
+  font-weight: 600;
+  color: var(--danger-text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- Variant rows ---------- */
+.hex {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &__picker {
+    flex: none;
+    width: 36px !important;
+    min-width: 0 !important;
+    height: 36px;
+    min-height: 0 !important;
+    padding: 2px !important;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    cursor: pointer;
+
+    &::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    &::-webkit-color-swatch {
+      border: 0;
+      border-radius: 5px;
+    }
+
+    &::-moz-color-swatch {
+      border: 0;
+      border-radius: 5px;
+    }
+  }
+
+  &__text {
+    width: 96px !important;
+    min-width: 0 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+  }
+}
+
+/* Remove button stays visible at the end of the row even when the table scrolls sideways. */
+.table .actions-col {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  width: 52px;
+  text-align: center;
+  background: var(--color-bg);
+  box-shadow: inset 1px 0 0 var(--color-border);
+}
+
+.table thead .actions-col {
+  z-index: 3;
+  background: var(--color-surface);
+}
+
+.remove {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  color: #b42318;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: #b42318;
+    background: #fdecec;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+}
+
+.table .sku-input {
+  min-width: 130px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+.table input[type='checkbox'] {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  accent-color: var(--ink-950);
+}

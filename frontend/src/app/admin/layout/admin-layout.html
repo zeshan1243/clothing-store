@@ -1,0 +1,60 @@
+<a class="skip-link" href="#admin-main">Skip to content</a>
+
+<div class="admin">
+  <aside class="sidebar" aria-label="Admin">
+    <a routerLink="/admin" class="sidebar__brand">{{ brandName }} <span>Admin</span></a>
+    <nav>
+      <ul>
+        @for (item of navItems; track item.path) {
+          <li>
+            <a [routerLink]="item.path" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: !!item.exact }">
+              <app-icon [name]="item.icon" [size]="20" /> {{ item.label }}
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+    <div class="sidebar__foot">
+      <a routerLink="/" target="_blank" rel="noopener"><app-icon name="store" [size]="18" /> View store</a>
+      <button type="button" (click)="auth.logout()"><app-icon name="log-out" [size]="18" /> Sign out</button>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <a routerLink="/admin" class="topbar__brand">{{ brandName }} <span>Admin</span></a>
+    @if (auth.admin(); as admin) {
+      <a routerLink="/admin/account" class="topbar__user">
+        <span class="avatar" aria-hidden="true">{{ admin.name.charAt(0) }}</span>
+        <span class="topbar__name">{{ admin.name }}</span>
+      </a>
+    }
+  </header>
+
+  <main id="admin-main" class="main" tabindex="-1">
+    <router-outlet />
+  </main>
+  <app-admin-toasts />
+
+  <nav class="tabs" aria-label="Admin sections">
+    @for (item of tabs; track item.path) {
+      <a [routerLink]="item.path" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: !!item.exact }">
+        <app-icon [name]="item.icon" [size]="22" /> <span>{{ item.label }}</span>
+      </a>
+    }
+    <button type="button" (click)="moreOpen.set(true)" [attr.aria-expanded]="moreOpen()">
+      <app-icon name="ellipsis" [size]="22" /> <span>More</span>
+    </button>
+  </nav>
+</div>
+
+<app-sheet heading="More" [open]="moreOpen()" (closed)="moreOpen.set(false)">
+  <ul class="more">
+    @for (item of moreItems; track item.path) {
+      <li>
+        <a [routerLink]="item.path" routerLinkActive="is-active"><app-icon [name]="item.icon" [size]="20" /> {{ item.label }}</a>
+      </li>
+    }
+    <li><a routerLink="/" target="_blank" rel="noopener"><app-icon name="store" [size]="20" /> View store</a></li>
+    <li><button type="button" (click)="auth.logout()"><app-icon name="log-out" [size]="20" /> Sign out</button></li>
+  </ul>
+</app-sheet>

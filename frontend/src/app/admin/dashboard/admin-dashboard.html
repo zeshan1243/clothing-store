@@ -1,0 +1,136 @@
+<div class="page-head">
+  <h1>Dashboard</h1>
+  @if (auth.admin(); as a) {
+    <span class="muted">Hi {{ a.name }}</span>
+  }
+</div>
+
+@if (error(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+}
+
+@if (data(); as d) {
+  <section aria-labelledby="work-heading">
+    <h2 id="work-heading" class="section-title">Needs attention now</h2>
+    <div class="cards">
+      <a class="card card--link" routerLink="/admin/orders" (click)="openTab('new')" [class.card--alert]="d.orders_new > 0">
+        <span class="card__value">{{ d.orders_new }}</span>
+        <span class="card__label">New orders to confirm</span>
+      </a>
+      <a class="card card--link" routerLink="/admin/orders" (click)="openTab('todo')">
+        <span class="card__value">{{ d.orders_awaiting_delivery }}</span>
+        <span class="card__label">Confirmed, to pack</span>
+      </a>
+      <a class="card card--link" routerLink="/admin/orders" (click)="openTab('todo')">
+        <span class="card__value">{{ d.orders_out_for_delivery }}</span>
+        <span class="card__label">Out for delivery</span>
+      </a>
+      <a class="card card--link" routerLink="/admin/orders" (click)="openTab('failed')" [class.card--alert]="d.orders_delivery_failed > 0">
+        <span class="card__value">{{ d.orders_delivery_failed }}</span>
+        <span class="card__label">Failed deliveries</span>
+      </a>
+      <div class="card" [class.card--warn]="+d.cod_outstanding > 0">
+        <span class="card__value">{{ d.cod_outstanding | qar }}</span>
+        <span class="card__label">Cash still to collect ({{ d.cod_outstanding_orders }} orders)</span>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="period-heading">
+    <div class="period">
+      <h2 id="period-heading" class="section-title">Period</h2>
+      <div class="period__buttons" role="group" aria-label="Period">
+        @for (p of [['today', 'Today'], ['7d', '7 days'], ['30d', '30 days'], ['month', 'This month'], ['custom', 'Custom']]; track p[0]) {
+          <button type="button" class="chip" [class.chip--active]="period === p[0]" (click)="setPeriod($any(p[0]))">{{ p[1] }}</button>
+        }
+      </div>
+      @if (period === 'custom') {
+        <form class="filters" (ngSubmit)="load()">
+          <label>From <input type="date" name="from" [(ngModel)]="dateFrom" /></label>
+          <label>To <input type="date" name="to" [(ngModel)]="dateTo" /></label>
+          <button type="submit" class="btn btn--secondary btn--small">Apply</button>
+        </form>
+      }
+    </div>
+
+    <div class="cards" [class.is-loading]="loading()">
+      <div class="card">
+        <span class="card__value">{{ d.gross_order_value | qar }}</span>
+        <span class="card__label">Order value placed ({{ d.orders_placed }} orders)</span>
+      </div>
+      <div class="card">
+        <span class="card__value">{{ d.cancelled_order_value | qar }}</span>
+        <span class="card__label">Cancelled ({{ d.orders_cancelled }} orders)</span>
+      </div>
+      <div class="card">
+        <span class="card__value">{{ d.orders_delivered }}</span>
+        <span class="card__label">Orders delivered</span>
+      </div>
+      <div class="card card--good">
+        <span class="card__value">{{ d.cash_collected | qar }}</span>
+        <span class="card__label">Cash collected</span>
+      </div>
+      @if (+d.refunds_paid > 0) {
+        <div class="card">
+          <span class="card__value">−{{ d.refunds_paid | qar }}</span>
+          <span class="card__label">Refunds paid</span>
+        </div>
+        <div class="card card--good">
+          <span class="card__value">{{ d.net_cash | qar }}</span>
+          <span class="card__label">Net cash</span>
+        </div>
+      }
+    </div>
+    <details class="definitions">
+      <summary>What do these numbers mean?</summary>
+      <ul>
+        <li><strong>Order value placed</strong> — total of orders customers placed in the period, including any later cancelled. It is not money received.</li>
+        <li><strong>Cancelled</strong> — orders cancelled in the period.</li>
+        <li><strong>Cash collected</strong> — COD cash actually recorded in the period. Only this is money in hand.</li>
+        <li><strong>Cash still to collect</strong> — unpaid balance on orders that are out for delivery or delivered, right now.</li>
+        <li>None of these figures is profit — profit needs product costs and expenses.</li>
+      </ul>
+    </details>
+  </section>
+
+  <div class="two-col">
+    <section class="panel" aria-labelledby="low-heading">
+      <div class="panel-head">
+        <h2 id="low-heading">Low stock ({{ d.low_stock_count }})</h2>
+        <a routerLink="/admin/inventory">Inventory →</a>
+      </div>
+      @if (d.low_stock.length) {
+        <ul class="list">
+          @for (v of d.low_stock; track v.variant_id) {
+            <li>
+              <a [routerLink]="['/admin/products', v.product_id]">{{ v.product_name }}</a>
+              <span class="muted"> {{ v.colour }} / {{ v.size }}</span>
+              <span class="status" [class.status--low]="v.available_quantity === 0">{{ v.available_quantity === 0 ? 'Sold out' : v.available_quantity + ' left' }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">All active variants are above their low-stock level.</p>
+      }
+    </section>
+
+    <section class="panel" aria-labelledby="supplier-heading">
+      <div class="panel-head">
+        <h2 id="supplier-heading">Owed to suppliers</h2>
+        <a routerLink="/admin/supplier-bills">Bills →</a>
+      </div>
+      @if (d.supplier_outstanding.length) {
+        <ul class="list">
+          @for (s of d.supplier_outstanding; track s.currency) {
+            <li><strong>{{ supplierMoney(s.amount, s.currency) }}</strong></li>
+          }
+        </ul>
+        <p class="muted small">Kept separate from sales and cash collected.</p>
+      } @else {
+        <p class="muted">No outstanding supplier bills.</p>
+      }
+    </section>
+  </div>
+} @else if (!error()) {
+  <p class="muted" role="status">Loading…</p>
+}

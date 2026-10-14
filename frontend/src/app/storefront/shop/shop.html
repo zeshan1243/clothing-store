@@ -1,0 +1,203 @@
+@if (activeCollection() === 'missing') {
+  <div class="container page">
+    <h1>{{ 'collections.notFound' | t }}</h1>
+    <p class="muted">{{ 'collections.notFoundText' | t }}</p>
+    <a routerLink="/collections" class="btn">{{ 'common.collections' | t }}</a>
+  </div>
+} @else {
+<div class="container page">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a routerLink="/">{{ 'common.home' | t }}</a> <span aria-hidden="true">/</span>
+    @if (collection()) {
+      <a routerLink="/collections">{{ 'common.collections' | t }}</a> <span aria-hidden="true">/</span>
+      <span aria-current="page">{{ heading() }}</span>
+    } @else if (activeCategory(); as c) {
+      <a routerLink="/shop">{{ 'common.shop' | t }}</a> <span aria-hidden="true">/</span> <span aria-current="page">{{ c | loc: 'name' }}</span>
+    } @else {
+      <span aria-current="page">{{ 'common.shop' | t }}</span>
+    }
+  </nav>
+
+  @if (collection()) {
+    <header class="banner" [class.banner--loading]="!collectionInfo()">
+      @if (collectionInfo(); as c) {
+        @if (c.cover_image_url) {
+          <img class="banner__img" [src]="c.cover_image_url" alt="" width="1600" height="600" />
+        }
+        <div class="banner__body">
+          <p class="banner__count" role="status">{{ 'count.items' | tp: total() }}</p>
+          <h1 class="banner__title">{{ heading() }}</h1>
+          @if (c.description) {
+            <p class="banner__desc">{{ c | loc: 'description' }}</p>
+          }
+        </div>
+      }
+    </header>
+  } @else {
+    <header class="head">
+      <h1>{{ heading() }}</h1>
+      <p class="muted count" role="status">
+        @if (items() !== null) { {{ 'count.items' | tp: total() }} }
+      </p>
+    </header>
+
+    <nav class="cats" [attr.aria-label]="'shop.categories' | t">
+      <a class="chip" routerLink="/shop" [class.chip--active]="!category() && !newOnly()">{{ 'shop.all' | t }}</a>
+      <a class="chip" routerLink="/shop" [queryParams]="{ new: 1 }" [class.chip--active]="newOnly() && !category()">{{ 'common.newIn' | t }}</a>
+      @for (c of categories(); track c.id) {
+        <a class="chip" [routerLink]="['/shop', c.slug]" [class.chip--active]="category() === c.slug"
+          [attr.aria-current]="category() === c.slug ? 'page' : null">{{ c | loc: 'name' }}</a>
+      }
+    </nav>
+  }
+
+  <!-- Mobile: sticky Filter / Sort bar -->
+  <div class="bar">
+    <button type="button" class="bar__btn" (click)="filterOpen.set(true)">
+      <app-icon name="sliders" [size]="18" /> {{ 'shop.filter' | t }} @if (filterCount()) { <span class="bar__count">{{ filterCount() }}</span> }
+    </button>
+    <button type="button" class="bar__btn" (click)="sortOpen.set(true)">
+      <app-icon name="arrow-up-down" [size]="18" /> {{ sortLabel() | t }}
+    </button>
+  </div>
+
+  <div class="layout">
+    <!-- Desktop sidebar -->
+    <aside class="sidebar" [attr.aria-label]="'shop.filters' | t">
+      <ng-container *ngTemplateOutlet="filters; context: { $implicit: 'side' }" />
+    </aside>
+
+    <section #results class="results" [attr.aria-label]="'shop.products' | t" [attr.aria-busy]="refreshing() || loading()">
+      <div class="results__top">
+        @if (filterCount()) {
+          <ul class="active" [attr.aria-label]="'shop.activeFilters' | t">
+            @for (s of sizes(); track s) {
+              <li class="pill-wrap"><button type="button" class="pill" (click)="toggle('size', s)">{{ 'shop.sizeChip' | t: { s: s } }} <app-icon name="x" [size]="14" /></button></li>
+            }
+            @for (c of colours(); track c) {
+              <li class="pill-wrap"><button type="button" class="pill" (click)="toggle('colour', c)">{{ c }} <app-icon name="x" [size]="14" /></button></li>
+            }
+            @if (min() || max()) {
+              <li class="pill-wrap"><button type="button" class="pill" (click)="minPrice = ''; maxPrice = ''; applyPrice()">QAR {{ min() || '0' }}–{{ max() || '∞' }} <app-icon name="x" [size]="14" /></button></li>
+            }
+            @if (inStockOnly()) {
+              <li class="pill-wrap"><button type="button" class="pill" (click)="toggleStock()">{{ 'shop.inStock' | t }} <app-icon name="x" [size]="14" /></button></li>
+            }
+            <li><button type="button" class="link" (click)="clearFilters()">{{ 'shop.clearAll' | t }}</button></li>
+          </ul>
+        } @else {
+          <span></span>
+        }
+        <div class="sort">
+          <span class="muted" aria-hidden="true">{{ 'shop.sort' | t }}</span>
+          <app-select class="sort__select" size="sm" [searchable]="false" [options]="sortSelectOptions()" [ariaLabel]="'shop.sortBy' | t"
+            [ngModel]="currentSort()" (ngModelChange)="setSort($event)" name="sort" />
+        </div>
+      </div>
+
+      @if (error()) {
+        <p class="alert alert--error" role="alert">{{ 'shop.loadError' | t }}</p>
+      } @else if (loading()) {
+        <div class="product-grid grid3"><app-product-card-skeleton [count]="8" /></div>
+      } @else if (items()?.length) {
+        <!-- Keyed by result-set version: a new result set builds a fresh grid so its cards slide in;
+             "Load more" keeps the same grid and only the appended cards animate. -->
+        @for (version of [listVersion()]; track version) {
+          <div class="product-grid grid3 grid" [class.is-refreshing]="refreshing()">
+            @for (p of items(); track p.id; let i = $index) {
+              <app-product-card class="enter" [style.--d]="stagger(i)" [product]="p" [eager]="i < 4" />
+            }
+            @if (loadingMore()) {
+              <app-product-card-skeleton [count]="4" />
+            }
+          </div>
+        }
+        <div class="more">
+          <p class="muted">{{ 'shop.showing' | t: { shown: items()!.length, total: total() } }}</p>
+          @if (hasMore()) {
+            <button type="button" class="btn btn--secondary" [disabled]="loadingMore()" (click)="loadMore()">{{ 'shop.loadMore' | t }}</button>
+          }
+        </div>
+      } @else {
+        <div class="empty">
+          <app-icon name="search" [size]="32" />
+          <h2>{{ 'shop.emptyTitle' | t }}</h2>
+          <p class="muted">{{ 'shop.emptyText' | t }}</p>
+          <div class="empty__actions">
+            @if (filterCount()) {
+              <button type="button" class="btn" (click)="clearFilters()">{{ 'shop.clearFilters' | t }}</button>
+            }
+            <a routerLink="/shop" class="btn btn--secondary">{{ 'common.shopAll' | t }}</a>
+          </div>
+        </div>
+      }
+    </section>
+  </div>
+</div>
+}
+
+<ng-template #filters let-where>
+  @if (facets(); as f) {
+    @if (f.sizes.length) {
+      <fieldset class="group">
+        <legend class="overline">{{ 'shop.size' | t }}</legend>
+        <div class="sizes">
+          @for (s of f.sizes; track s) {
+            <button type="button" class="size" [attr.aria-pressed]="isSelected('size', s)" (click)="toggle('size', s)">{{ s }}</button>
+          }
+        </div>
+      </fieldset>
+    }
+    @if (f.colours.length) {
+      <fieldset class="group">
+        <legend class="overline">{{ 'shop.colour' | t }}</legend>
+        <div class="colours">
+          @for (c of f.colours; track c.name) {
+            <button type="button" class="colour" [attr.aria-pressed]="isSelected('colour', c.name)" (click)="toggle('colour', c.name)">
+              <span class="colour__dot" [style.background]="c.hex ?? '#ccc'"></span>{{ c.name }}
+            </button>
+          }
+        </div>
+      </fieldset>
+    }
+    <fieldset class="group">
+      <legend class="overline">{{ 'shop.price' | t }}</legend>
+      <form class="price ltr" (ngSubmit)="applyPrice()">
+        <label class="visually-hidden" [for]="where + '-pmin'">{{ 'shop.minPrice' | t }}</label>
+        <input [id]="where + '-pmin'" name="min" inputmode="numeric" [placeholder]="f.min_price ? (+f.min_price).toFixed(0) : ('shop.min' | t)" [(ngModel)]="minPrice" />
+        <span aria-hidden="true">–</span>
+        <label class="visually-hidden" [for]="where + '-pmax'">{{ 'shop.maxPrice' | t }}</label>
+        <input [id]="where + '-pmax'" name="max" inputmode="numeric" [placeholder]="f.max_price ? (+f.max_price).toFixed(0) : ('shop.max' | t)" [(ngModel)]="maxPrice" />
+        <button type="submit" class="btn btn--secondary">{{ 'shop.go' | t }}</button>
+      </form>
+    </fieldset>
+    <fieldset class="group">
+      <legend class="overline">{{ 'shop.availability' | t }}</legend>
+      <label class="toggle">
+        <input type="checkbox" [checked]="inStockOnly()" (change)="toggleStock()" />
+        <span class="toggle__track" aria-hidden="true"></span>
+        {{ 'shop.inStockOnly' | t }}
+      </label>
+    </fieldset>
+  }
+</ng-template>
+
+<app-sheet [heading]="'shop.filter' | t" [open]="filterOpen()" (closed)="filterOpen.set(false)">
+  <ng-container *ngTemplateOutlet="filters; context: { $implicit: 'sheet' }" />
+  <div sheet-footer class="sheet-foot">
+    <button type="button" class="btn btn--secondary" (click)="clearFilters()" [disabled]="!filterCount()">{{ 'shop.clear' | t }}</button>
+    <button type="button" class="btn btn--lg" (click)="filterOpen.set(false)">{{ 'shop.show' | tp: total() }}</button>
+  </div>
+</app-sheet>
+
+<app-sheet [heading]="'shop.sortBy' | t" [open]="sortOpen()" (closed)="sortOpen.set(false)">
+  <ul class="sort-list">
+    @for (o of sortOptions; track o.value) {
+      <li>
+        <button type="button" class="sort-opt" [attr.aria-pressed]="currentSort() === o.value" (click)="setSort(o.value)">
+          {{ o.label | t }} @if (currentSort() === o.value) { <app-icon name="check" [size]="18" /> }
+        </button>
+      </li>
+    }
+  </ul>
+</app-sheet>

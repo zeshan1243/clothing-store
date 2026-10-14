@@ -1,0 +1,65 @@
+<div class="page-head"><h1>Orders</h1></div>
+
+<nav class="tabs" aria-label="Order status">
+  @for (t of tabs; track t.key) {
+    <button type="button" class="tab" [class.tab--active]="activeTab() === t.key"
+      [attr.aria-pressed]="activeTab() === t.key" (click)="selectTab(t.key)">{{ t.label }}</button>
+  }
+</nav>
+
+<form class="filters" (ngSubmit)="search()">
+  <label class="visually-hidden" for="o-search">Search</label>
+  <input id="o-search" type="search" name="q" placeholder="Order no., name or phone" [(ngModel)]="q" />
+  <label class="visually-hidden" for="o-pay">Payment</label>
+  <app-select class="filter-select" inputId="o-pay" name="pay" size="sm" [options]="paymentOptions" [(ngModel)]="paymentStatus" (ngModelChange)="search()" />
+  <label class="visually-hidden" for="o-assigned">Assigned to</label>
+  <app-select class="filter-select" inputId="o-assigned" name="assigned" size="sm" [options]="assignedOptions()" [(ngModel)]="assignedTo" (ngModelChange)="search()" />
+  <label>From <input type="date" name="from" [(ngModel)]="dateFrom" (ngModelChange)="search()" /></label>
+  <label>To <input type="date" name="to" [(ngModel)]="dateTo" (ngModelChange)="search()" /></label>
+  <button type="submit" class="btn btn--secondary btn--small">Search</button>
+  <button type="button" class="btn btn--secondary btn--small" (click)="clearFilters()">Clear</button>
+</form>
+
+@if (error(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+}
+
+@if (result(); as r) {
+  <p class="muted count" role="status">{{ r.total }} {{ r.total === 1 ? 'order' : 'orders' }}</p>
+  <ul class="orders" [class.is-loading]="loading()">
+    @for (o of r.items; track o.id) {
+      <li>
+        <a class="order" [routerLink]="['/admin/orders', o.id]">
+          <div class="order__main">
+            <strong>{{ o.order_number }}</strong>
+            <span class="muted">{{ o.created_at | date: 'd MMM, h:mm a' }}</span>
+          </div>
+          <div class="order__customer">
+            {{ o.customer_name }} · <span class="muted">{{ phone(o.customer_phone) }}</span>
+            <br /><span class="muted">{{ o.delivery_area }} · {{ o.item_count }} {{ o.item_count === 1 ? 'item' : 'items' }}</span>
+          </div>
+          <div class="order__badges">
+            <span class="badge badge--{{ o.order_status }}">{{ statusLabels[o.order_status] }}</span>
+            <span class="badge pay--{{ o.payment_status }}">{{ paymentLabels[o.payment_status] }}</span>
+            @if (o.assigned_admin) {
+              <span class="muted small">→ {{ o.assigned_admin.name }}</span>
+            }
+          </div>
+          <div class="order__total">{{ o.grand_total | qar }}</div>
+        </a>
+      </li>
+    } @empty {
+      <li class="empty-state">{{ loading() ? 'Loading…' : 'No orders here.' }}</li>
+    }
+  </ul>
+
+  @if (totalPages() > 1) {
+    <nav class="pager" aria-label="Pagination">
+      <button type="button" class="btn btn--secondary btn--small" [disabled]="page() <= 1" (click)="goTo(page() - 1)">Previous</button>
+      <span>Page {{ page() }} of {{ totalPages() }}</span>
+      <button type="button" class="btn btn--secondary btn--small" [disabled]="page() >= totalPages()" (click)="goTo(page() + 1)">Next</button>
+    </nav>
+  }
+} @else if (loading()) {
+  <p class="muted" role="status">Loading…</p>
+}

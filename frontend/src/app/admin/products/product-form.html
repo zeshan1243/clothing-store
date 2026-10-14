@@ -1,0 +1,156 @@
+<div class="page-head">
+  <h1>{{ isNew ? 'Add product' : (product()?.name ?? 'Edit product') }}</h1>
+  <a routerLink="/admin/products" class="btn btn--secondary btn--small">Back to products</a>
+</div>
+
+@if (loading()) {
+  <p class="muted" role="status">Loading…</p>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    @if (error(); as e) {
+      <p class="alert alert--error" role="alert">{{ e }}</p>
+    }
+
+    <div class="tabs" role="tablist" aria-label="Product sections">
+      @for (t of tabs; track t.key) {
+        <button type="button" role="tab" class="tab" [attr.aria-selected]="tab() === t.key" (click)="tab.set(t.key)">
+          {{ t.label }}
+          @if (t.key === 'variants' && variants.length) { <span class="tab__count">{{ variants.length }}</span> }
+          @if (t.key === 'images' && images.length) { <span class="tab__count">{{ images.length }}</span> }
+        </button>
+      }
+    </div>
+
+    <section class="panel" [hidden]="tab() !== 'details'">
+      <h2>Details</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="name">Name (English)</label>
+          <input id="name" formControlName="name" [attr.aria-invalid]="form.controls.name.touched && form.controls.name.invalid" />
+        </div>
+        <div class="field">
+          <label for="name_ar">Name (Arabic) <span class="muted">(optional)</span></label>
+          <input id="name_ar" formControlName="name_ar" dir="rtl" lang="ar" placeholder="مثال: هودي واسع" />
+        </div>
+        <div class="field">
+          <label for="slug">URL slug <span class="muted">(blank = from name)</span></label>
+          <input id="slug" formControlName="slug" placeholder="oversized-hoodie"
+            [attr.aria-invalid]="form.controls.slug.invalid" />
+          @if (form.controls.slug.invalid) {
+            <p class="field-error">Lowercase letters, numbers and dashes only.</p>
+          }
+        </div>
+        <div class="field">
+          <label for="status">Status</label>
+          <app-select inputId="status" formControlName="status" size="lg" [options]="statusOptions" />
+        </div>
+        <div class="field">
+          <label for="category">Category</label>
+          <app-select inputId="category" formControlName="category_id" size="lg" [options]="categoryOptions()" />
+        </div>
+        <div class="field">
+          <label for="size-guide">Size guide</label>
+          <app-select inputId="size-guide" formControlName="size_guide_id" size="lg" [options]="sizeGuideOptions()" />
+        </div>
+        <div class="field">
+          <label for="description">Description (English)</label>
+          <textarea id="description" rows="4" formControlName="description"></textarea>
+        </div>
+        <div class="field">
+          <label for="description_ar">Description (Arabic) <span class="muted">(optional)</span></label>
+          <textarea id="description_ar" rows="4" formControlName="description_ar" dir="rtl" lang="ar"></textarea>
+        </div>
+        <p class="muted small span-2">Arabic fields are shown when a shopper switches the store to Arabic; if empty, the English text is used.</p>
+      </div>
+    </section>
+
+    <section class="panel" [hidden]="tab() !== 'details'">
+      <h2>Pricing (QAR)</h2>
+      <div class="form-grid">
+        <div class="field">
+          <label for="base-price">Price</label>
+          <input id="base-price" inputmode="decimal" formControlName="base_price"
+            [attr.aria-invalid]="form.controls.base_price.touched && form.controls.base_price.invalid" />
+        </div>
+        <div class="field">
+          <label for="sale-price">Sale price <span class="muted">(optional)</span></label>
+          <input id="sale-price" inputmode="decimal" formControlName="sale_price"
+            [attr.aria-invalid]="form.hasError('saleNotBelowBase')" />
+          @if (form.hasError('saleNotBelowBase')) {
+            <p class="field-error">Must be lower than the price.</p>
+          }
+        </div>
+        <div class="field span-2">
+          <label for="sale-percent">Or discount % <span class="muted">(shows as a “−20%” badge)</span></label>
+          <div class="percent-row">
+            <div class="percent-input">
+              <input id="sale-percent" inputmode="numeric" maxlength="2" placeholder="e.g. 20"
+                [value]="salePercent()" (input)="onPercentInput($any($event.target).value)" />
+              <span aria-hidden="true">%</span>
+            </div>
+            @for (p of [10, 20, 30, 50]; track p) {
+              <button type="button" class="chip-btn" [class.is-on]="salePercent() === '' + p" (click)="onPercentInput('' + p)">{{ p }}%</button>
+            }
+            @if (form.controls.sale_price.value) {
+              <button type="button" class="link-btn" (click)="clearSale()">End sale</button>
+            }
+          </div>
+        </div>
+        <label class="checkbox"><input type="checkbox" formControlName="is_featured" /> Featured on homepage</label>
+        <label class="checkbox"><input type="checkbox" formControlName="is_new_arrival" /> New arrival</label>
+      </div>
+    </section>
+
+    <section class="panel" [hidden]="tab() !== 'images'">
+      <h2>Images</h2>
+      <p class="muted small">Paste hosted image URLs (e.g. from Cloudinary). The first image is the main one.</p>
+      <div formArrayName="images" class="images">
+        @for (img of images.controls; track img; let i = $index) {
+          <div class="image-row" [formGroupName]="i">
+            @if (img.value['image_url']) {
+              <img class="thumb" [src]="img.value['image_url']" alt="" />
+            } @else {
+              <span class="thumb"></span>
+            }
+            <input formControlName="image_url" placeholder="https://…" [attr.aria-label]="'Image ' + (i + 1) + ' URL'" />
+            <input formControlName="alt_text" placeholder="Alt text" [attr.aria-label]="'Image ' + (i + 1) + ' alt text'" />
+            <input formControlName="colour" placeholder="Colour" class="narrow" [attr.aria-label]="'Image ' + (i + 1) + ' colour'" />
+            <div class="row-actions">
+              <button type="button" class="btn btn--secondary btn--small" (click)="moveImage(i, -1)" [disabled]="i === 0" aria-label="Move up">↑</button>
+              <button type="button" class="btn btn--secondary btn--small" (click)="moveImage(i, 1)" [disabled]="i === images.length - 1" aria-label="Move down">↓</button>
+              <button type="button" class="btn btn--secondary btn--small" (click)="images.removeAt(i)" aria-label="Remove image">✕</button>
+            </div>
+          </div>
+        }
+      </div>
+      <button type="button" class="btn btn--secondary btn--small" (click)="addImage()">Add image</button>
+    </section>
+
+    <section class="panel" [hidden]="tab() !== 'variants'">
+      <h2>Variants &amp; stock</h2>
+      <app-variant-builder [rows]="variants" [product]="product()" [productName]="nameValue()" [revision]="variantsRevision()"
+        (productChanged)="product.set($event)" />
+    </section>
+
+    <section class="panel" [hidden]="tab() !== 'seo'">
+      <h2>SEO <span class="muted">(optional)</span></h2>
+      <div class="field">
+        <label for="meta-title">Page title</label>
+        <input id="meta-title" formControlName="meta_title" />
+      </div>
+      <div class="field">
+        <label for="meta-desc">Meta description</label>
+        <textarea id="meta-desc" rows="2" formControlName="meta_description"></textarea>
+      </div>
+    </section>
+
+    <div class="save-bar">
+      @if (product(); as p) {
+        @if (p.status === 'ACTIVE') {
+          <a [routerLink]="['/products', p.slug]" target="_blank" rel="noopener">View in store ↗</a>
+        }
+      }
+      <button type="submit" class="btn" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save product' }}</button>
+    </div>
+  </form>
+}

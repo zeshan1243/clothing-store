@@ -1,0 +1,147 @@
+<a routerLink="/admin/customers" class="back"><app-icon name="chevron-left" [size]="16" /> Customers</a>
+
+@if (error(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+}
+
+@if (customer(); as c) {
+  <div class="page-head">
+    <div>
+      <h1>{{ c.full_name }}</h1>
+      <p class="muted">
+        @if (c.registered) {
+          <span class="status status--ACTIVE">Registered</span>
+          @if (c.phone_verified) { <span class="status">Phone verified</span> } @else { <span class="status status--DRAFT">Phone not verified</span> }
+          @if (c.must_change_password) { <span class="status status--low">Must change password</span> }
+        } @else {
+          <span class="status status--INACTIVE">Guest (no account)</span>
+        }
+      </p>
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="panel__head">
+        <h2>Profile</h2>
+        @if (!editing()) {
+          <button type="button" class="btn btn--secondary btn--small" (click)="startEdit()">Edit</button>
+        }
+      </div>
+      @if (editing()) {
+        <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+          <div class="field">
+            <label for="cu-name">Name</label>
+            <input id="cu-name" formControlName="full_name" [attr.aria-invalid]="invalid('full_name')" />
+          </div>
+          <div class="field">
+            <label for="cu-phone">Phone</label>
+            <input id="cu-phone" formControlName="phone" class="ltr" [attr.aria-invalid]="invalid('phone')" />
+            <p class="muted small">Changing the number clears its verification.</p>
+          </div>
+          <div class="field">
+            <label for="cu-email">Email <span class="muted">(optional)</span></label>
+            <input id="cu-email" type="email" formControlName="email" [attr.aria-invalid]="invalid('email')" />
+          </div>
+          @if (c.registered) {
+            <label class="checkbox"><input type="checkbox" formControlName="phone_verified" /> Phone verified (shows their earlier guest orders)</label>
+          }
+          <div class="actions">
+            <button type="submit" class="btn btn--small" [disabled]="busy()">Save</button>
+            <button type="button" class="btn btn--secondary btn--small" (click)="editing.set(false)">Cancel</button>
+          </div>
+        </form>
+      } @else {
+        <dl class="facts">
+          <div><dt>Phone</dt><dd class="ltr">{{ phone(c.phone) }}</dd></div>
+          <div><dt>Email</dt><dd>{{ c.email || '—' }}</dd></div>
+          @if (c.registered) {
+            <div><dt>Registered</dt><dd>{{ c.registered_at | date: 'd MMM y, h:mm a' }}</dd></div>
+            <div><dt>Last sign-in</dt><dd>{{ c.last_login_at ? (c.last_login_at | date: 'd MMM y, h:mm a') : '—' }}</dd></div>
+          }
+          <div><dt>First seen</dt><dd>{{ c.created_at | date: 'd MMM y' }}</dd></div>
+          <div><dt>Orders</dt><dd>{{ c.order_count }} · {{ c.total_ordered | qar }}</dd></div>
+        </dl>
+        @if (addressLines(); as lines) {
+          <h3 class="sub">Saved address</h3>
+          <p class="address">@for (l of lines; track $index) { {{ l }}<br /> }</p>
+        }
+      }
+    </section>
+
+    @if (c.registered) {
+      <section class="panel">
+        <h2>Account</h2>
+        @if (!c.phone_verified) {
+          <div class="action">
+            <div>
+              <strong>Verify phone</strong>
+              <p class="muted small">After confirming by call or WhatsApp that this number is theirs, their orders from before they registered show in their account.</p>
+            </div>
+            <button type="button" class="btn btn--secondary btn--small" [disabled]="busy()" (click)="verifyPhone()">Verify</button>
+          </div>
+        }
+        <div class="action">
+          <div>
+            <strong>Reset password</strong>
+            <p class="muted small">Creates a temporary password to send on WhatsApp. They're signed out and must choose a new one.</p>
+          </div>
+          <button type="button" class="btn btn--secondary btn--small" [disabled]="busy()" (click)="resetPassword()">Reset</button>
+        </div>
+        @if (tempPassword(); as pw) {
+          <div class="temp">
+            <p class="small">Temporary password (shown once):</p>
+            <div class="temp__row">
+              <code class="ltr">{{ pw }}</code>
+              <button type="button" class="btn btn--secondary btn--small" (click)="copyTemp()"><app-icon name="copy" [size]="16" /> Copy</button>
+              @if (tempWhatsapp(); as link) {
+                <a class="btn btn--small wa" [href]="link" target="_blank" rel="noopener"><app-icon name="message" [size]="16" /> Send on WhatsApp</a>
+              }
+            </div>
+          </div>
+        }
+        <div class="action action--danger">
+          <div>
+            <strong>Delete account</strong>
+            <p class="muted small">Removes their login and saved address. Orders stay for your records.</p>
+          </div>
+          <button type="button" class="btn btn--secondary btn--small danger" [disabled]="busy()" (click)="deleteAccount()">Delete</button>
+        </div>
+      </section>
+    }
+  </div>
+
+  <h2 class="orders-title">Orders</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Order</th>
+          <th scope="col">Placed</th>
+          <th scope="col">Status</th>
+          <th scope="col">Payment</th>
+          <th scope="col" class="num">Total</th>
+          <th scope="col">How</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (o of c.orders; track o.id) {
+          <tr>
+            <td><a [routerLink]="['/admin/orders', o.id]"><strong>{{ o.order_number }}</strong></a></td>
+            <td>{{ o.created_at | date: 'd MMM y, h:mm a' }}</td>
+            <td>{{ statusLabels[o.order_status] }}</td>
+            <td>{{ paymentLabels[o.payment_status] }}</td>
+            <td class="num">{{ o.grand_total | qar }}</td>
+            <td>
+              @if (o.placed_signed_in) { <span class="status status--ACTIVE">Signed in</span> } @else { <span class="status">Guest checkout</span> }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="empty-state">No orders yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+} @else if (!error()) {
+  <p class="muted" role="status">Loading…</p>
+}

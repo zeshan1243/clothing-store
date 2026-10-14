@@ -1,0 +1,226 @@
+@switch (state()) {
+  @case ('loading') {
+    <div class="container page pdp" aria-busy="true">
+      <div class="skeleton sk-gallery"></div>
+      <div class="sk-info">
+        <div class="skeleton sk-line sk-line--title"></div>
+        <div class="skeleton sk-line"></div>
+        <div class="skeleton sk-line sk-line--short"></div>
+      </div>
+    </div>
+  }
+  @case ('not-found') {
+    <section class="container page center">
+      <h1>{{ 'pdp.notFound' | t }}</h1>
+      <p class="muted">{{ 'pdp.notFoundText' | t }}</p>
+      <a routerLink="/shop" class="btn">{{ 'pdp.backToShop' | t }}</a>
+    </section>
+  }
+  @case ('error') {
+    <section class="container page">
+      <p class="alert alert--error" role="alert">{{ 'pdp.loadError' | t }}</p>
+    </section>
+  }
+  @case ('ready') {
+    @let p = product()!;
+    <div class="container page">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a routerLink="/shop"><app-icon name="chevron-left" [size]="16" /> {{ 'common.shop' | t }}</a>
+        @if (p.category_slug) {
+          <span aria-hidden="true">/</span>
+          <a [routerLink]="['/shop', p.category_slug]">{{ p | loc: 'category_name' }}</a>
+        }
+      </nav>
+
+      <div class="pdp">
+        <!-- Gallery -->
+        <section class="gallery" [attr.aria-label]="'pdp.images' | t">
+          @if (images().length > 1) {
+            <ul class="gallery__thumbs">
+              @for (img of images(); track img.id; let i = $index) {
+                <li>
+                  <button type="button" [class.is-active]="i === activeImage()" (click)="pickThumbnail(i)"
+                    [attr.aria-label]="'pdp.showImage' | t: { n: i + 1 }" [attr.aria-current]="i === activeImage()">
+                    <img [src]="img.image_url" alt="" loading="lazy" width="80" height="100" />
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          <div class="gallery__main">
+            <div #gallery class="gallery__track" (scroll)="onGalleryScroll(gallery)" tabindex="0" [attr.aria-label]="'pdp.swipe' | t">
+              @for (img of images(); track img.id; let i = $index) {
+                <img [src]="img.image_url" [alt]="p | loc: 'name'" width="800" height="1000"
+                  [attr.loading]="i === 0 ? 'eager' : 'lazy'" [attr.fetchpriority]="i === 0 ? 'high' : null" />
+              } @empty {
+                <div class="gallery__empty"></div>
+              }
+            </div>
+            @if (images().length > 1) {
+              <div class="gallery__dots" aria-hidden="true">
+                @for (img of images(); track img.id; let i = $index) {
+                  <span [class.is-active]="i === activeImage()"></span>
+                }
+              </div>
+            }
+            <div class="gallery__badges">
+              @if (p.is_new_arrival && p.in_stock) { <span class="badge badge--new">{{ 'card.new' | t }}</span> }
+              @if (p.in_stock && saleOff(); as off) { <span class="badge badge--sale"><span class="ltr">−{{ off }}%</span><span class="visually-hidden"> {{ 'card.sale' | t }}</span></span> }
+            </div>
+          </div>
+        </section>
+
+        <!-- Purchase panel -->
+        <section class="panel">
+          <h1 class="panel__name">{{ p | loc: 'name' }}</h1>
+          <p class="panel__price price">
+            @if (p.sale_price) {
+              <span class="sale">{{ p.sale_price | qar }}</span>
+              <s class="was"><span class="visually-hidden">{{ 'card.was' | t }} </span>{{ p.base_price | qar }}</s>
+            } @else {
+              {{ p.price | qar }}
+            }
+          </p>
+
+          @if (!p.in_stock) {
+            <p class="alert alert--info">{{ 'pdp.soldOutNotice' | t }}</p>
+          }
+
+          <fieldset class="opt">
+            <legend>{{ 'pdp.colour' | t }}: <strong>{{ selectedColour() }}</strong></legend>
+            <div class="swatches" role="radiogroup" [attr.aria-label]="'pdp.colour' | t">
+              @for (c of colours(); track c.name) {
+                <button type="button" role="radio" class="swatch" [class.is-out]="!c.available"
+                  [attr.aria-checked]="c.name === selectedColour()" [style.--swatch]="c.hex ?? '#ccc'"
+                  [attr.aria-label]="c.name + (c.available ? '' : ('pdp.soldOutSuffix' | t))" (click)="selectColour(c.name)"></button>
+              }
+            </div>
+          </fieldset>
+
+          <fieldset class="opt" #sizePicker [class.shake]="sizeError()">
+            <div class="opt__head">
+              <legend>{{ 'pdp.size' | t }} @if (selectedSize()) {: <strong>{{ selectedSize() }}</strong>}</legend>
+              @if (p.size_guide) {
+                <button type="button" class="link" (click)="sizeGuideOpen.set(true)"><app-icon name="ruler" [size]="16" /> {{ 'pdp.sizeGuide' | t }}</button>
+              }
+            </div>
+            <div class="sizes" role="radiogroup" [attr.aria-label]="'pdp.size' | t">
+              @for (v of sizes(); track v.id) {
+                <button type="button" role="radio" class="size" [class.is-out]="v.available_quantity === 0"
+                  [attr.aria-checked]="v.size === selectedSize()" [attr.aria-disabled]="v.available_quantity === 0"
+                  (click)="selectSize(v)">
+                  {{ v.size }}
+                  @if (v.available_quantity === 0) { <span class="visually-hidden">{{ 'pdp.soldOutSuffix' | t }}</span> }
+                </button>
+              }
+            </div>
+            <div class="stock" aria-live="polite">
+              @if (sizeError() && !selectedSize()) {
+                <p class="field-error">{{ 'pdp.selectSize' | t }}</p>
+              } @else if (selectedVariant(); as v) {
+                @if (v.available_quantity <= lowStock) {
+                  <p class="stock__low"><app-icon name="alert" [size]="16" /> {{ 'pdp.onlyLeftIn' | t: { n: v.available_quantity, size: v.size } }}</p>
+                } @else {
+                  <p class="stock__ok"><app-icon name="check" [size]="16" /> {{ 'pdp.inStock' | t }}</p>
+                }
+              }
+            </div>
+          </fieldset>
+
+          <div class="opt qty-row">
+            <span class="opt__label" id="qty-label">{{ 'common.quantity' | t }}</span>
+            <div class="stepper" role="group" aria-labelledby="qty-label">
+              <button type="button" (click)="changeQuantity(-1)" [disabled]="quantity() <= 1" [attr.aria-label]="'common.decrease' | t"><app-icon name="minus" [size]="18" /></button>
+              <output aria-live="polite">{{ quantity() }}</output>
+              <button type="button" (click)="changeQuantity(1)" [disabled]="!selectedVariant() || quantity() >= maxQuantity()" [attr.aria-label]="'common.increase' | t"><app-icon name="plus" [size]="18" /></button>
+            </div>
+            @if (selectedVariant() && quantity() >= maxQuantity()) {
+              <span class="muted small">{{ 'pdp.maxAvailable' | t }}</span>
+            }
+          </div>
+
+          <button type="button" class="btn btn--lg btn--block add" [class.add--done]="justAdded()" [disabled]="!p.in_stock" (click)="addToCart()">
+            @if (justAdded()) {
+              <app-icon name="check" [size]="20" /> {{ 'pdp.added' | t }}
+            } @else {
+              {{ 'pdp.addToCart' | t }}
+            }
+          </button>
+          <p class="delivery-chip"><app-icon name="truck" [size]="18" /> {{ 'pdp.deliveryChip' | t }}</p>
+
+          <div class="accordions">
+            @if (p.description) {
+              <details open>
+                <summary>{{ 'pdp.description' | t }} <app-icon name="chevron-down" [size]="18" /></summary>
+                <p class="desc">{{ p | loc: 'description' }}</p>
+              </details>
+            }
+            <details>
+              <summary>{{ 'pdp.deliveryReturns' | t }} <app-icon name="chevron-down" [size]="18" /></summary>
+              <p>{{ 'pdp.deliveryText' | t }}</p>
+              <p>{{ 'pdp.returnsText' | t }} <a routerLink="/pages/returns">{{ 'pdp.returnsPolicy' | t }}</a></p>
+            </details>
+          </div>
+
+          <a class="wa" [href]="whatsappLink()" target="_blank" rel="noopener"><app-icon name="message" /> {{ 'pdp.askWhatsapp' | t }}</a>
+        </section>
+      </div>
+
+      @if (related().length) {
+        <section class="related" aria-labelledby="related-heading">
+          <h2 id="related-heading">{{ 'pdp.related' | t }}</h2>
+          <div class="product-grid">
+            @for (r of related(); track r.id) {
+              <app-product-card [product]="r" />
+            }
+          </div>
+        </section>
+      }
+    </div>
+
+    <!-- Sticky add-to-cart bar (mobile) -->
+    <div class="sticky-bar" aria-hidden="false">
+      <div class="sticky-bar__info">
+        <span class="price">{{ p.price | qar }}</span>
+        <span class="muted small">{{ selectedSize() ? selectedColour() + ' · ' + selectedSize() : ('pdp.selectSize' | t) }}</span>
+      </div>
+      <button type="button" class="btn btn--lg" [class.add--done]="justAdded()" [disabled]="!p.in_stock" (click)="addToCart()">
+        {{ (justAdded() ? 'pdp.added' : 'pdp.addToCart') | t }}
+      </button>
+    </div>
+
+    @if (p.size_guide; as guide) {
+      <app-sheet [heading]="'pdp.sizeGuide' | t" [open]="sizeGuideOpen()" (closed)="sizeGuideOpen.set(false)">
+        <div class="guide__unit" role="group" [attr.aria-label]="'pdp.units' | t">
+          <button type="button" class="chip" [attr.aria-pressed]="guideUnit() === 'cm'" (click)="guideUnit.set('cm')">{{ 'pdp.cm' | t }}</button>
+          <button type="button" class="chip" [attr.aria-pressed]="guideUnit() === 'in'" (click)="guideUnit.set('in')">{{ 'pdp.inch' | t }}</button>
+        </div>
+        <div class="guide__table">
+          <table>
+            <caption class="visually-hidden">{{ guide.name }}</caption>
+            @if (guide.content.columns) {
+              <thead>
+                <tr>
+                  @for (col of guide.content.columns; track $index) {
+                    <th scope="col">{{ col }}</th>
+                  }
+                </tr>
+              </thead>
+            }
+            <tbody>
+              @for (row of guideRows(); track $index) {
+                <tr [class.is-selected]="row[0] === selectedSize()">
+                  @for (cell of row; track $index) {
+                    <td>{{ cell }}</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <h3 class="guide__how">{{ 'pdp.howToMeasure' | t }}</h3>
+        <p class="muted small">{{ 'pdp.howToMeasureText' | t }}</p>
+      </app-sheet>
+    }
+  }
+}

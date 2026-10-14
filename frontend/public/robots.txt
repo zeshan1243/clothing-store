@@ -1,0 +1,8 @@
+# Replace https://www.example.com with the real storefront domain before launch.
+User-agent: *
+Disallow: /admin
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order/
+
+Sitemap: https://www.example.com/sitemap.xml

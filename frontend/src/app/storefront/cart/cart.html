@@ -1,0 +1,96 @@
+<div class="container page">
+  <h1>{{ 'cart.title' | t }}</h1>
+
+  @if (!cart.items().length) {
+    <div class="empty">
+      <span class="empty__icon"><app-icon name="bag" [size]="28" /></span>
+      <p>{{ 'cart.empty' | t }}</p>
+      <a routerLink="/shop" [queryParams]="{ new: 1 }" class="btn btn--lg">{{ 'cart.shopNew' | t }}</a>
+    </div>
+  } @else {
+    @for (n of notices(); track $index) {
+      <p class="alert alert--info notice" role="status"><app-icon name="info" [size]="18" /> {{ n.key | t: n.params }}</p>
+    }
+
+    <div class="layout">
+      <ul class="lines" [attr.aria-label]="'cart.items' | t">
+        @for (item of cart.items(); track item.variantId) {
+          <li class="line" [class.line--problem]="unavailable().has(item.variantId)">
+            <a [routerLink]="['/products', item.productSlug]" class="line__img">
+              @if (item.imageUrl) {
+                <img [src]="item.imageUrl" [alt]="item | loc: 'productName'" width="96" height="120" loading="lazy" />
+              }
+            </a>
+            <div class="line__body">
+              <div class="line__top">
+                <a [routerLink]="['/products', item.productSlug]" class="line__name">{{ item | loc: 'productName' }}</a>
+                <span class="line__total price">{{ lineTotal(item) | qar }}</span>
+              </div>
+              <p class="muted line__meta">{{ item.colour }} · {{ item.size }} · {{ item.unitPrice | qar }}</p>
+
+              @if (unavailable().has(item.variantId)) {
+                <p class="field-error">{{ 'cart.soldOutLine' | t }}</p>
+              }
+
+              <div class="line__actions">
+                <div class="stepper" role="group" [attr.aria-label]="'cart.quantityFor' | t: { name: (item | loc: 'productName') }">
+                  <button type="button" [attr.aria-label]="'common.decrease' | t" (click)="cart.setQuantity(item.variantId, item.quantity - 1)"><app-icon name="minus" [size]="16" /></button>
+                  <output>{{ item.quantity }}</output>
+                  <button type="button" [attr.aria-label]="'common.increase' | t" [disabled]="item.quantity >= maxFor(item)"
+                    (click)="cart.setQuantity(item.variantId, item.quantity + 1)"><app-icon name="plus" [size]="16" /></button>
+                </div>
+                <button type="button" class="remove" (click)="cart.remove(item.variantId)">{{ 'common.remove' | t }}</button>
+              </div>
+            </div>
+          </li>
+        }
+      </ul>
+
+      <aside class="summary" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">{{ 'cart.summary' | t }}</h2>
+        @if (cart.freeDeliveryRemaining() !== null) {
+          <div class="free">
+            <p>
+              @if (cart.freeDeliveryRemaining()! > 0) {
+                {{ 'cart.freeLeft' | t: { amount: (cart.freeDeliveryRemaining() | qar) } }}
+              } @else {
+                <strong>{{ 'cart.freeUnlocked' | t }}</strong>
+              }
+            </p>
+            <div class="free__bar"><span [style.width.%]="freeProgress()"></span></div>
+          </div>
+        }
+        <app-coupon-field [applied]="quote()?.coupon ?? null" [error]="couponError()" [busy]="couponBusy()"
+          (apply)="applyCoupon($event)" (remove)="removeCoupon()" />
+        @if (quote(); as q) {
+          <dl>
+            <div><dt>{{ 'common.subtotal' | t }}</dt><dd class="price">{{ q.subtotal | qar }}</dd></div>
+            @if (+q.discount_amount > 0) {
+              <div class="discount"><dt>{{ 'coupon.discountCode' | t: { code: q.coupon?.code ?? '' } }}</dt><dd class="price">−{{ q.discount_amount | qar }}</dd></div>
+            }
+            @if (q.delivery_area; as a) {
+              <div><dt>{{ 'co.deliveryTo' | t: { area: (a | loc: 'name') } }}</dt><dd class="price">{{ +q.delivery_fee ? (q.delivery_fee | qar) : ('common.free' | t) }}</dd></div>
+            } @else {
+              <div><dt>{{ 'cart.deliveryDoha' | t }}</dt><dd class="muted">{{ 'cart.deliveryAtCheckout' | t }}</dd></div>
+            }
+            <div class="total"><dt>{{ 'common.total' | t }}</dt><dd class="price">{{ q.grand_total | qar }}</dd></div>
+          </dl>
+          @if (!q.delivery_area) {
+            <p class="delivery-note">{{ 'cart.deliveryNote' | t }}</p>
+          }
+        } @else {
+          <dl>
+            <div><dt>{{ 'common.subtotal' | t }}</dt><dd class="price">{{ cart.subtotal() | qar }}</dd></div>
+            <div><dt>{{ 'cart.deliveryDoha' | t }}</dt><dd class="muted">{{ 'cart.deliveryAtCheckout' | t }}</dd></div>
+            <div class="total"><dt>{{ 'common.total' | t }}</dt><dd class="price">{{ cart.total() | qar }}</dd></div>
+          </dl>
+          <p class="delivery-note">{{ 'cart.deliveryNote' | t }}</p>
+        }
+        <a routerLink="/checkout" class="btn btn--lg btn--block" [attr.aria-disabled]="hasProblems()"
+          (click)="hasProblems() && $event.preventDefault()">{{ 'common.checkout' | t }}</a>
+        <p class="cod"><app-icon name="banknote" [size]="18" /> {{ 'cart.payNote' | t }}</p>
+        <a routerLink="/shop" class="btn btn--ghost btn--block">{{ 'common.continueShopping' | t }}</a>
+      </aside>
+    </div>
+  }
+</div>

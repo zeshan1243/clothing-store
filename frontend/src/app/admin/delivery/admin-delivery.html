@@ -1,0 +1,98 @@
+<div class="page-head">
+  <h1>Delivery</h1>
+  <button type="button" class="btn btn--small" (click)="adding.set(!adding())">{{ adding() ? 'Close' : 'Add area' }}</button>
+</div>
+
+<p class="rules">
+  <span class="tag tag--free">Free zone · {{ counts().free }} areas</span>
+  <span class="tag">Charged · {{ counts().paid }} areas</span>
+  @if (rates(); as r) {
+    <span class="muted">Automatic charge: QAR {{ +r.outside_base_fee }} + QAR {{ +r.fee_per_step }} per {{ r.step_km }} km from central Doha.
+      Type a <strong>charge</strong> to set an area's price by hand, or leave it blank to use the automatic charge.</span>
+  }
+</p>
+
+@if (error(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+}
+
+@if (adding()) {
+  <section class="panel add">
+    <h2>Add an area</h2>
+    <div class="add-row">
+      <label>Name <input placeholder="e.g. Zekreet" [(ngModel)]="newArea.name" /></label>
+      <label>Arabic name <input placeholder="الاسم بالعربية" dir="rtl" lang="ar" [(ngModel)]="newArea.name_ar" /></label>
+      <label class="short">Distance (km) <input type="number" min="0" max="400" [(ngModel)]="newArea.distance_km" /></label>
+      <label class="short">Charge (QAR) <input inputmode="decimal" [placeholder]="'auto ' + autoFee(newArea.distance_km)" [(ngModel)]="newArea.fixed_fee"
+        [attr.aria-invalid]="feeInvalid(newArea)" /></label>
+      <label class="checkbox"><input type="checkbox" [(ngModel)]="newArea.is_free" /> Free zone</label>
+      <span class="fee-preview">Customer pays <strong>{{ previewFee(newArea) ? (previewFee(newArea) | qar) : 'Free' }}</strong></span>
+      <button type="button" class="btn btn--small" (click)="add()">Add area</button>
+    </div>
+  </section>
+}
+
+<div class="toolbar">
+  <input type="search" class="search" placeholder="Search areas…" aria-label="Search areas" [ngModel]="search()" (ngModelChange)="setSearch($event)" />
+  <div class="chips" role="group" aria-label="Filter areas">
+    @for (f of filters; track f.key) {
+      <button type="button" class="chip" [class.is-on]="filter() === f.key" [attr.aria-pressed]="filter() === f.key" (click)="setFilter(f.key)">{{ f.label }}</button>
+    }
+  </div>
+  @if (unsaved()) {
+    <span class="unsaved">{{ unsaved() }} unsaved {{ unsaved() === 1 ? 'change' : 'changes' }}</span>
+  }
+</div>
+
+<div class="table-wrap areas-table">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Area</th>
+        <th scope="col" class="num">Distance</th>
+        <th scope="col">Free zone</th>
+        <th scope="col">Charge (QAR)</th>
+        <th scope="col" class="num">Customer pays</th>
+        <th scope="col">At checkout</th>
+        <th scope="col"><span class="visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (a of visible(); track a.id) {
+        @let d = value(a);
+        <tr [class.is-dirty]="dirty(a)" [class.is-off]="!d.is_active">
+          <td><strong>{{ a.name }}</strong>@if (a.name_ar) { <span class="muted ar" lang="ar"> · {{ a.name_ar }}</span> }</td>
+          <td class="num">
+            <label class="unit-input"><input type="number" min="0" max="400" [attr.aria-label]="'Distance for ' + a.name"
+              [ngModel]="d.distance_km" (ngModelChange)="change(a, { distance_km: $event })" /> km</label>
+          </td>
+          <td><input type="checkbox" [attr.aria-label]="'Free delivery for ' + a.name" [ngModel]="d.is_free" (ngModelChange)="change(a, { is_free: $event })" /></td>
+          <td>
+            @if (d.is_free) {
+              <span class="muted small">—</span>
+            } @else {
+              <input class="charge" inputmode="decimal" [attr.aria-label]="'Charge for ' + a.name" [placeholder]="'auto ' + autoFee(d.distance_km)"
+                [ngModel]="d.fixed_fee" (ngModelChange)="change(a, { fixed_fee: $event })" [attr.aria-invalid]="feeInvalid(d)" />
+            }
+          </td>
+          <td class="num">
+            <strong>{{ previewFee(d) ? (previewFee(d) | qar) : 'Free' }}</strong>
+            @if (!d.is_free) {
+              <br /><span class="muted small">{{ d.fixed_fee.trim() ? 'manual' : 'by distance' }}</span>
+            }
+          </td>
+          <td><label class="checkbox"><input type="checkbox" [ngModel]="d.is_active" (ngModelChange)="change(a, { is_active: $event })" /> Shown</label></td>
+          <td class="row-actions">
+            @if (dirty(a)) {
+              <button type="button" class="btn btn--small" (click)="save(a)">Save</button>
+              <button type="button" class="btn btn--secondary btn--small" (click)="discard(a)">Undo</button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr><td colspan="7" class="empty-state">{{ areas().length ? 'No areas match.' : 'Loading…' }}</td></tr>
+      }
+    </tbody>
+  </table>
+</div>
+<app-pager [total]="filtered().length" [page]="page()" [pageSize]="pageSize()" (pageChange)="page.set($event)" (pageSizeChange)="setPageSize($event)" />

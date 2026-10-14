@@ -1,0 +1,39 @@
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--gutter);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(212, 255, 58, 0.16), transparent 45%),
+    var(--ink-950);
+
+  &__card {
+    width: 100%;
+    max-width: 400px;
+    padding: var(--space-8) var(--space-6);
+    background: var(--bone-100);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: var(--space-6);
+
+      &::before {
+        content: 'Admin';
+        display: block;
+        margin-bottom: var(--space-2);
+        font-family: var(--font-body);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--volt-text);
+      }
+    }
+
+    .btn {
+      min-height: 52px;
+    }
+  }
+}

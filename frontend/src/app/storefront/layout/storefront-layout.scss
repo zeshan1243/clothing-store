@@ -1,0 +1,511 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+main {
+  flex: 1;
+  outline: none;
+}
+
+/* Over the hero the header is transparent and overlaps it. */
+.main--hero {
+  margin-top: calc(-1 * var(--header-h));
+}
+
+/* ---------- Announcement bar ---------- */
+.announce {
+  height: var(--announce-h);
+  background: var(--dark-block);
+  color: var(--volt-400);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow: hidden;
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    transform: translateY(calc(var(--i, 0) * -1 * var(--announce-h)));
+    transition: transform var(--dur-slow) var(--ease-out);
+
+    li {
+      height: var(--announce-h);
+      display: grid;
+      place-items: center;
+    }
+  }
+
+  &__all {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    display: grid;
+    place-items: center;
+
+    &__list {
+      display: none;
+    }
+
+    &__all {
+      display: block;
+      margin: 0;
+    }
+  }
+}
+
+/* ---------- Header ---------- */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  transition:
+    background-color var(--dur-base),
+    color var(--dur-base),
+    border-color var(--dur-base);
+
+  &--hero {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: transparent;
+  }
+
+  &__inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    height: var(--header-h);
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-1);
+  }
+
+  @media (min-width: 1024px) {
+    &__inner {
+      grid-template-columns: auto 1fr auto;
+      gap: var(--space-8);
+    }
+
+    /* Doubled class beats the later generic .icon-btn display rule. */
+    .header__menu.header__menu {
+      display: none;
+    }
+  }
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  justify-self: center;
+
+  @media (min-width: 1024px) {
+    font-size: 24px;
+    justify-self: start;
+  }
+
+  &--footer {
+    font-size: 28px;
+    display: inline-block;
+    margin-bottom: var(--space-3);
+  }
+}
+
+.icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    background: rgba(128, 128, 128, 0.14);
+  }
+}
+
+.cart-count {
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--volt-400);
+  color: var(--on-volt);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  animation: pop var(--dur-base) var(--ease-out);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+.back-link {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.header--minimal .header__inner {
+  grid-template-columns: 1fr auto;
+}
+
+.header--minimal .logo {
+  justify-self: start;
+}
+
+/* On phones the theme toggle lives in the menu and footer to keep the header uncluttered. */
+.theme-btn.theme-btn {
+  display: none;
+
+  @media (min-width: 600px) {
+    display: inline-grid;
+  }
+}
+
+/* ---------- Language switch ---------- */
+.lang-btn {
+  display: none;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  margin-inline-end: var(--space-2);
+  border: 1.5px solid currentColor;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast),
+    color var(--dur-fast);
+
+  &:hover {
+    background: var(--strong);
+    border-color: var(--strong);
+    color: var(--on-strong);
+  }
+
+  @media (min-width: 600px) {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* Arabic label set in the Arabic font even while the page is in English (and vice versa). */
+.lang-btn:lang(ar),
+.nav__lang:lang(ar),
+.footer__lang:lang(ar) {
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.nav__lang,
+.footer__lang {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.nav__lang {
+  display: none;
+}
+
+.nav--open .nav__theme {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--bone-100);
+}
+
+.nav--open .nav__lang {
+  display: block;
+  margin-top: var(--space-3);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--volt-400);
+}
+
+.footer__lang {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Navigation ---------- */
+.nav {
+  display: none;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  &--open {
+    display: flex;
+    flex-direction: column;
+    /* Absolute to the sticky header (its backdrop-filter makes it the containing block for fixed
+       children anyway), so the panel always starts right under the header at any scroll position. */
+    position: absolute;
+    top: 100%;
+    inset-inline: 0;
+    height: calc(100dvh - var(--header-h));
+    z-index: 40;
+    padding: var(--space-6) var(--gutter);
+    background: var(--dark-block);
+    color: var(--on-dark-block);
+    overflow-y: auto;
+    animation: menuIn var(--dur-base) var(--ease-out);
+
+    a {
+      display: block;
+      padding: var(--space-3) 0;
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+
+      &.is-active {
+        color: var(--volt-400);
+      }
+    }
+  }
+
+  &__extra {
+    margin-top: auto;
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--ink-800);
+  }
+
+  &--open .nav__wa {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-body);
+    font-size: 16px;
+  }
+
+  @media (min-width: 1024px) {
+    display: block;
+    justify-self: center;
+
+    ul {
+      display: flex;
+      gap: var(--space-6);
+    }
+
+    a {
+      position: relative;
+      font-size: 15px;
+      padding: var(--space-2) 0;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0;
+        height: 2px;
+        background: currentColor;
+        transform: scaleX(0);
+        transform-origin: left;
+
+        :host-context([dir='rtl']) & {
+          transform-origin: right;
+        }
+        transition: transform var(--dur-base) var(--ease-out);
+      }
+
+      &:hover::after,
+      &.is-active::after {
+        transform: scaleX(1);
+      }
+    }
+
+    &__extra {
+      display: none;
+    }
+  }
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* ---------- Search ---------- */
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 0 0 var(--space-4);
+  border: 1.5px solid var(--strong);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 52px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 16px;
+
+    // The field is focused as soon as search opens; the box's own border already shows where to type,
+    // so skip the global focus ring here.
+    &:focus,
+    &:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+  }
+
+  .btn {
+    border-radius: 0 10px 10px 0;
+    min-height: 52px;
+  }
+
+  &__suggest {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+
+    .overline {
+      width: 100%;
+      margin: 0;
+    }
+  }
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  margin-top: var(--section-gap);
+  padding-top: var(--space-12);
+  background: var(--dark-block);
+  color: var(--bone-100);
+
+  &__top {
+    display: grid;
+    gap: var(--space-8) var(--space-6);
+    grid-template-columns: 1fr 1fr;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: 2fr repeat(4, 1fr);
+    }
+  }
+
+  &__brand {
+    grid-column: 1 / -1;
+
+    p {
+      color: var(--ink-400);
+      max-width: 34ch;
+      margin: 0 0 var(--space-3);
+    }
+
+    @media (min-width: 1024px) {
+      grid-column: auto;
+    }
+  }
+
+  &__cod {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px 12px;
+    border: 1px solid var(--ink-800);
+    border-radius: var(--radius-pill);
+    color: var(--volt-400) !important;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  h2 {
+    color: var(--ink-400);
+    margin-bottom: var(--space-3);
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li a {
+    display: inline-block;
+    padding: 6px 0;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--volt-400);
+    }
+  }
+
+  &__legal {
+    margin: var(--space-12) 0 0;
+    padding-block: var(--space-6) calc(var(--space-6) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--ink-800);
+    color: var(--ink-400);
+    font-size: 13px;
+  }
+}
+
+/* Small volt dot on the account icon when signed in. */
+.account-btn {
+  position: relative;
+
+  &.is-signed-in::after {
+    content: '';
+    position: absolute;
+    top: 9px;
+    inset-inline-end: 9px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--volt-400);
+    box-shadow: 0 0 0 2px var(--bg);
+  }
+}

@@ -1,0 +1,240 @@
+<a routerLink="/admin/orders" class="back">← Orders</a>
+
+@if (loadError(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+} @else if (!order()) {
+  <p class="muted" role="status">Loading…</p>
+} @else {
+  @let o = order()!;
+
+  <header class="head">
+    <div>
+      <h1>{{ o.order_number }}</h1>
+      <p class="muted">Placed {{ o.created_at | date: 'EEE d MMM yyyy, h:mm a' }}</p>
+    </div>
+    <div class="head__badges">
+      <span class="badge badge--{{ o.order_status }}">{{ statusLabels[o.order_status] }}</span>
+      <span class="badge pay--{{ o.payment_status }}">{{ paymentLabels[o.payment_status] }}</span>
+    </div>
+  </header>
+
+  @if (actionError(); as e) {
+    <p class="alert alert--error" role="alert">{{ e }}</p>
+  }
+
+  @if (o.order_status === 'CANCELLED') {
+    <p class="alert alert--info">Cancelled {{ o.cancelled_at | date: 'd MMM, h:mm a' }} — {{ o.cancellation_reason }}</p>
+  }
+  @if (o.order_status === 'DELIVERY_FAILED') {
+    <p class="alert alert--error">Delivery failed — {{ o.delivery_failure_reason }}</p>
+  }
+
+  <!-- Next steps -->
+  @if (actions().length) {
+    <section class="panel actions" aria-labelledby="actions-heading">
+      <h2 id="actions-heading" class="visually-hidden">Actions</h2>
+      @if (!pending()) {
+        <div class="actions__buttons">
+          @for (a of actions(); track a.key) {
+            <button type="button" class="btn btn--small" [class.btn--secondary]="!a.primary" [class.btn--danger]="a.danger"
+              [disabled]="busy()" (click)="start(a)">{{ a.label }}</button>
+          }
+        </div>
+      } @else {
+        @let a = pending()!;
+        <div class="confirm">
+          <p><strong>{{ a.label }}?</strong></p>
+          @if (a.confirmText) {
+            <p class="muted">{{ a.confirmText }}</p>
+          }
+          @if (a.collectCash && +o.balance_due > 0) {
+            <p>This records <strong>{{ o.balance_due | qar }}</strong> collected in cash now.</p>
+          }
+          @if (a.needsReason) {
+            <div class="field">
+              <label for="reason">Reason (required)</label>
+              <textarea id="reason" rows="2" [(ngModel)]="reason" name="reason"
+                [placeholder]="a.status === 'CANCELLED' ? 'e.g. Customer could not be reached after 3 calls' : 'e.g. No answer at the door'"></textarea>
+            </div>
+          } @else {
+            <div class="field">
+              <label for="note">Note (optional)</label>
+              <input id="note" [(ngModel)]="note" name="note" />
+            </div>
+          }
+          <div class="actions__buttons">
+            <button type="button" class="btn btn--small" [class.btn--danger]="a.danger" [disabled]="busy()" (click)="runPending()">
+              {{ busy() ? 'Saving…' : 'Yes, ' + a.label.toLowerCase() }}
+            </button>
+            <button type="button" class="btn btn--secondary btn--small" [disabled]="busy()" (click)="pending.set(null)">Back</button>
+          </div>
+        </div>
+      }
+    </section>
+  }
+
+  <div class="grid">
+    <div class="col">
+      <!-- Contact -->
+      <section class="panel" aria-labelledby="contact-heading">
+        <h2 id="contact-heading">Contact customer</h2>
+        <p class="customer">
+          <strong>{{ o.customer_name }}</strong>
+          @if (o.customer_order_count > 1) {
+            <span class="badge">{{ o.customer_order_count }} orders</span>
+          }
+          <br />
+          <a [href]="'tel:' + o.customer_phone" class="phone">{{ phone(o.customer_phone) }}</a>
+          @if (o.customer_email) {
+            <br /><a [href]="'mailto:' + o.customer_email">{{ o.customer_email }}</a>
+          }
+        </p>
+        <div class="contact-buttons">
+          <a class="btn btn--small" [href]="'tel:' + o.customer_phone">Call</a>
+          @if (whatsapp(); as wa) {
+            <a class="btn btn--small btn--wa" [href]="wa" target="_blank" rel="noopener">WhatsApp</a>
+          }
+          <button type="button" class="btn btn--secondary btn--small" (click)="copyPhone()">{{ copied() ? 'Copied ✓' : 'Copy number' }}</button>
+        </div>
+        <p class="muted small">WhatsApp opens with a pre-filled confirmation message — it is not sent until you press send. Update the order status after you speak to the customer.</p>
+      </section>
+
+      <!-- Delivery -->
+      <section class="panel" aria-labelledby="delivery-heading">
+        <h2 id="delivery-heading">Delivery address</h2>
+        <address>
+          <strong>{{ o.delivery_area }}</strong>@if (o.delivery_distance_km && +o.delivery_fee > 0) { <span class="muted"> · ≈ {{ o.delivery_distance_km }} km from Doha</span> }<br />
+          @if (o.delivery_zone) { Zone {{ o.delivery_zone }} · }
+          @if (o.delivery_street) { Street {{ o.delivery_street }} · }
+          @if (o.delivery_building) { Building {{ o.delivery_building }} }
+          @if (o.delivery_unit) { <br />Flat/villa {{ o.delivery_unit }} }
+          @if (o.delivery_landmark) { <br />Landmark: {{ o.delivery_landmark }} }
+        </address>
+        @if (o.delivery_instructions) {
+          <p class="note"><strong>Instructions:</strong> {{ o.delivery_instructions }}</p>
+        }
+        @if (o.customer_notes) {
+          <p class="note"><strong>Customer note:</strong> {{ o.customer_notes }}</p>
+        }
+        <div class="field assign">
+          <label for="assign">Delivering founder</label>
+          <app-select inputId="assign" size="lg" [options]="assignOptions()" [disabled]="busy()"
+            [ngModel]="o.assigned_admin?.id ?? null" (ngModelChange)="assign($event)" />
+        </div>
+      </section>
+
+      <!-- Items -->
+      <section class="panel" aria-labelledby="items-heading">
+        <h2 id="items-heading">Items</h2>
+        <ul class="items">
+          @for (i of o.items; track i.id) {
+            <li>
+              @if (i.image_url) {
+                <img [src]="i.image_url" alt="" width="48" height="60" />
+              }
+              <div>
+                @if (i.product_id) {
+                  <a [routerLink]="['/admin/products', i.product_id]">{{ i.product_name }}</a>
+                } @else {
+                  {{ i.product_name }}
+                }
+                <br /><span class="muted small">{{ i.colour }} / {{ i.size }} · {{ i.sku }}</span>
+              </div>
+              <div class="num">{{ i.quantity }} × {{ i.unit_price | qar }}<br /><strong>{{ i.line_total | qar }}</strong></div>
+            </li>
+          }
+        </ul>
+        <dl class="totals">
+          <div><dt>Subtotal</dt><dd>{{ o.subtotal | qar }}</dd></div>
+          <div><dt>Delivery</dt><dd>{{ o.delivery_fee | qar }}</dd></div>
+          @if (+o.discount_amount > 0) {
+            <div><dt>Discount@if (o.coupon_code) { ({{ o.coupon_code }}) }</dt><dd>−{{ o.discount_amount | qar }}</dd></div>
+          }
+          @if (o.coupon_code && +o.discount_amount === 0) {
+            <div><dt>Coupon ({{ o.coupon_code }})</dt><dd>Free delivery</dd></div>
+          }
+          <div class="totals__grand"><dt>Total ({{ o.payment_method }})</dt><dd>{{ o.grand_total | qar }}</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <div class="col">
+      <!-- Payment -->
+      <section class="panel" aria-labelledby="payment-heading">
+        <h2 id="payment-heading">Cash on delivery</h2>
+        <dl class="totals">
+          <div><dt>Collected</dt><dd>{{ o.amount_collected | qar }}</dd></div>
+          @if (+o.amount_refunded > 0) {
+            <div><dt>Refunded</dt><dd>−{{ o.amount_refunded | qar }}</dd></div>
+          }
+          <div class="totals__grand"><dt>Balance due</dt><dd>{{ o.balance_due | qar }}</dd></div>
+        </dl>
+
+        @if (o.payments.length) {
+          <ul class="payments">
+            @for (p of o.payments; track p.id) {
+              <li>
+                <span [class.neg]="p.type === 'REFUND'">{{ p.type === 'REFUND' ? 'Refund' : 'Collected' }} {{ p.amount | qar }}</span>
+                <span class="muted small">{{ p.collected_at | date: 'd MMM, h:mm a' }} · {{ p.recorded_by?.name ?? '—' }}
+                  @if (p.reference) { · Ref {{ p.reference }} }
+                  @if (p.notes) { · {{ p.notes }} }
+                </span>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (canRecordCash() || netCollected() > 0) {
+          <form class="pay-form" (ngSubmit)="recordPayment()">
+            <div class="pay-form__row">
+              <div class="field">
+                <label for="pay-type">Record</label>
+                <app-select inputId="pay-type" name="type" [options]="paymentTypeOptions()" [(ngModel)]="payment.type" />
+              </div>
+              <div class="field">
+                <label for="pay-amount">Amount (QAR)</label>
+                <input id="pay-amount" name="amount" inputmode="decimal" [(ngModel)]="payment.amount" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="pay-notes">Note (optional)</label>
+              <input id="pay-notes" name="notes" [(ngModel)]="payment.notes" />
+            </div>
+            <button type="submit" class="btn btn--small" [disabled]="busy()">Save</button>
+          </form>
+        } @else if (o.order_status !== 'CANCELLED') {
+          <p class="muted small">Cash can be recorded once the order is out for delivery.</p>
+        }
+      </section>
+
+      <!-- Notes -->
+      <section class="panel" aria-labelledby="notes-heading">
+        <h2 id="notes-heading">Internal notes</h2>
+        <div class="field">
+          <label for="internal-notes" class="visually-hidden">Internal notes</label>
+          <textarea id="internal-notes" rows="3" [(ngModel)]="notesDraft" placeholder="Only visible to admins"></textarea>
+        </div>
+        <button type="button" class="btn btn--secondary btn--small" [disabled]="busy() || notesDraft === (o.internal_notes ?? '')" (click)="saveNotes()">Save notes</button>
+      </section>
+
+      <app-order-documents [order]="o" />
+
+      <!-- History -->
+      <section class="panel" aria-labelledby="history-heading">
+        <h2 id="history-heading">History</h2>
+        <ol class="timeline">
+          @for (h of o.history; track h.id) {
+            <li>
+              <span class="badge badge--{{ h.new_status }}">{{ statusLabels[h.new_status] }}</span>
+              <span class="muted small">{{ h.created_at | date: 'd MMM, h:mm a' }} · {{ h.changed_by?.name ?? 'Customer' }}</span>
+              @if (h.note) {
+                <p class="small">{{ h.note }}</p>
+              }
+            </li>
+          }
+        </ol>
+        <p class="small"><a [routerLink]="['/order', o.public_token]" target="_blank" rel="noopener">Customer's confirmation page ↗</a></p>
+      </section>
+    </div>
+  </div>
+}

@@ -1,0 +1,341 @@
+.section {
+  margin-top: var(--section-gap);
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+
+    h2 {
+      margin: 0;
+    }
+
+    &--flush {
+      padding: 0;
+    }
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+  }
+}
+
+/* ---------- Trust strip ---------- */
+.fold {
+  display: flex;
+  flex-direction: column;
+  // The announcement bar sits above; the header overlays the hero, so this fills the screen exactly.
+  min-height: calc(100vh - var(--announce-h));
+  min-height: calc(100svh - var(--announce-h));
+
+  &__hero {
+    flex: 1 0 auto;
+  }
+}
+
+.trust {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+
+  &__list {
+    list-style: none;
+    margin-block: 0; /* keep .container's auto inline margins so the strip is centred */
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    padding-block: var(--space-6);
+    font-size: 14px;
+    line-height: 1.4;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+
+      @media (min-width: 1024px) {
+        justify-content: center;
+      }
+    }
+  }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--dark-block);
+    color: var(--volt-400);
+  }
+}
+
+/* ---------- New arrivals rail (horizontal scroll on mobile) ---------- */
+.rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 62%;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+
+  > * {
+    scroll-snap-align: start;
+  }
+
+  @media (min-width: 600px) {
+    grid-auto-columns: 38%;
+    gap: var(--space-4);
+  }
+
+  @media (min-width: 1024px) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+    gap: var(--space-6);
+
+    > :nth-child(n + 5) {
+      display: none;
+    }
+  }
+}
+
+/* ---------- Category tiles ---------- */
+.collections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+
+  @media (min-width: 700px) {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  &__hero {
+    grid-column: 1 / -1;
+  }
+}
+
+.tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  aspect-ratio: 4 / 5;
+  padding: var(--space-4);
+  container-type: inline-size;
+  border-radius: var(--radius-md);
+  background: var(--dark-block);
+  color: var(--bone-100);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform var(--dur-base) var(--ease-out);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: auto -30% -30% auto;
+    width: 80%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212, 255, 58, 0.25), transparent 70%);
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+
+    &::before {
+      transform: scale(1.3);
+    }
+
+    .tile__go {
+      transform: translateX(4px);
+    }
+  }
+
+  // Photo tiles: image fills the tile, a bottom gradient keeps the name readable in both themes.
+  &--photo {
+    background: var(--ink-950);
+    color: #f6f4ef;
+
+    &::before {
+      inset: 0;
+      width: auto;
+      aspect-ratio: auto;
+      border-radius: 0;
+      z-index: 1;
+      background: linear-gradient(to top, rgba(11, 11, 12, 0.82) 0%, rgba(11, 11, 12, 0.35) 38%, transparent 62%);
+    }
+
+    &:hover::before {
+      transform: none;
+    }
+
+    &:hover .tile__img {
+      transform: scale(1.06);
+    }
+
+    .tile__desc {
+      color: rgba(246, 244, 239, 0.8);
+    }
+
+    .tile__name,
+    .tile__desc,
+    .tile__go {
+      z-index: 2;
+    }
+  }
+
+  &__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+
+  &--light {
+    background: var(--surface-strong);
+    color: var(--text);
+
+    .tile__desc {
+      color: var(--text-muted);
+    }
+  }
+
+  &__name {
+    position: relative;
+    font-family: var(--font-display);
+    // Sized to the tile so long names (e.g. "Accessories") fit on one line.
+    font-size: clamp(18px, 12cqi, 44px);
+    overflow-wrap: anywhere;
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+  }
+
+  &__desc {
+    position: relative;
+    margin-top: var(--space-2);
+    font-size: 13px;
+    color: var(--ink-400);
+  }
+
+  &__go {
+    position: absolute;
+    top: var(--space-4);
+    inset-inline-end: var(--space-4);
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--volt-400);
+    color: var(--on-volt);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+}
+
+/* ---------- Drop banner + marquee band ---------- */
+.drop {
+  margin-top: var(--section-gap);
+  background: var(--dark-block);
+  color: var(--bone-100);
+  overflow: hidden;
+
+  &__inner {
+    padding-block: var(--space-16);
+  }
+
+  &__live {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--volt-400);
+  }
+
+  &__title {
+    font-size: clamp(36px, 6vw + 8px, 88px);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    margin: var(--space-4) 0 var(--space-8);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--volt-400);
+  }
+}
+
+.band {
+  background: var(--volt-400);
+  color: var(--on-volt);
+  padding-block: var(--space-3);
+  overflow: hidden;
+
+  &__track {
+    display: flex;
+    width: max-content;
+    gap: var(--space-6);
+    font-family: var(--font-display);
+    font-size: clamp(18px, 2.5vw, 28px);
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+    animation: band 30s linear infinite;
+  }
+
+  &:hover .band__track {
+    animation-duration: 90s;
+  }
+}
+
+@keyframes band {
+  to {
+    transform: translateX(-50%);
+  }
+}

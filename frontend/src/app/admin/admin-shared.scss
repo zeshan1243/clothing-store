@@ -1,0 +1,189 @@
+// Shared admin page styles, imported by admin page components.
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+}
+
+.filters {
+  .filter-select {
+    flex: 0 1 200px;
+    min-width: 160px;
+  }
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+
+  input,
+  select {
+    min-height: 40px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font: inherit;
+    background: var(--color-bg);
+  }
+
+  input[type='search'] {
+    flex: 1 1 220px;
+  }
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+}
+
+.panel {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+
+  h2 {
+    font-size: 1.125rem;
+  }
+}
+
+// Tables scroll inside their own box (never taller than the screen) with the header row pinned.
+.table-wrap {
+  overflow: auto;
+  max-height: max(280px, calc(100dvh - var(--table-offset, 350px)));
+  overscroll-behavior: contain;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+
+  @media (max-width: 899px) {
+    // Leave room for the mobile top bar and bottom navigation.
+    max-height: max(280px, calc(100dvh - var(--table-offset, 285px) - 120px));
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+
+  th,
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    // border-collapse drops borders on sticky cells, so draw the line with a shadow.
+    box-shadow: inset 0 -1px 0 var(--color-border);
+  }
+
+  th {
+    background: var(--color-surface);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input,
+  select {
+    min-height: 36px;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font: inherit;
+    width: 100%;
+    min-width: 70px;
+  }
+}
+
+.thumb {
+  width: 40px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--color-surface);
+}
+
+.status {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--color-surface);
+
+  &--ACTIVE {
+    background: #dcfce7;
+    color: var(--color-success);
+  }
+
+  &--DRAFT {
+    background: #fef3c7;
+    color: var(--color-warning);
+  }
+
+  &--ARCHIVED,
+  &--INACTIVE {
+    background: #e7e5e4;
+    color: var(--color-text-muted);
+  }
+
+  &--low {
+    background: #fee2e2;
+    color: var(--color-danger);
+  }
+}
+
+.btn--small {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  font-size: 0.875rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0 var(--space-4);
+
+  @media (min-width: 700px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+}
+
+.empty-state {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-muted);
+}

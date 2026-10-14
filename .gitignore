@@ -1,0 +1,36 @@
+# --- Secrets / environment -----------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Python (backend) ----------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Node / Angular (frontend) ---------------------------------------------------
+# frontend/.gitignore has the full Angular list; these are a safety net.
+node_modules/
+frontend/dist/
+frontend/.angular/
+npm-debug.log*
+
+# --- Database backups (ops/backup_db.sh) -----------------------------------------
+*.dump
+*.sql.gz
+backups/
+
+# --- Logs / misc -----------------------------------------------------------------
+*.log
+
+# --- OS / editors ----------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/

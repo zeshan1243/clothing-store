@@ -1,0 +1,140 @@
+<div class="container page account">
+  @if (auth.customer(); as c) {
+    <header class="head">
+      <div>
+        <p class="overline muted">{{ 'account.title' | t }}</p>
+        <h1>{{ 'account.welcome' | t: { name: c.full_name.split(' ')[0] } }}</h1>
+        <p class="muted small"><span class="ltr">{{ prettyPhone(c.phone) }}</span> · {{ 'account.since' | t: { date: (c.registered_at | localDate) } }}</p>
+      </div>
+      <button type="button" class="btn btn--secondary" (click)="signOut()"><app-icon name="log-out" [size]="18" /> {{ 'account.signOut' | t }}</button>
+    </header>
+
+    @if (c.must_change_password) {
+      <div class="alert alert--error must" role="alert">
+        <strong>{{ 'account.mustChange' | t }}</strong> {{ 'account.mustChangeText' | t }}
+      </div>
+    }
+
+    <nav class="tabs" role="tablist">
+      @for (t of tabs; track t.key) {
+        <button type="button" role="tab" class="tab" [class.is-active]="tab() === t.key" [attr.aria-selected]="tab() === t.key"
+          [disabled]="c.must_change_password && t.key !== 'password'" (click)="setTab(t.key)">{{ t.label | t }}</button>
+      }
+    </nav>
+
+    @switch (tab()) {
+      @case ('orders') {
+        @if (!c.phone_verified) {
+          <p class="info"><app-icon name="info" [size]="18" /> {{ 'account.unverifiedNote' | t }}</p>
+        }
+        @if (ordersError()) {
+          <p class="alert alert--error" role="alert">{{ 'account.loadError' | t }}</p>
+        } @else if (orderList(); as list) {
+          @if (list.length) {
+            <ul class="orders">
+              @for (o of list; track o.order_number) {
+                <li>
+                  <a class="order" [routerLink]="['/track', o.public_token]">
+                    @if (o.image_url) {
+                      <img [src]="o.image_url" alt="" width="64" height="80" loading="lazy" />
+                    } @else {
+                      <span class="order__noimg"><app-icon name="package" [size]="22" /></span>
+                    }
+                    <span class="order__main">
+                      <strong class="ltr">{{ o.order_number }}</strong>
+                      <span class="muted small">{{ o.created_at | localDate }} · {{ 'count.items' | tp: o.item_count }}</span>
+                      <span class="small names">{{ o.item_names.join(', ') }}</span>
+                    </span>
+                    <span class="order__side">
+                      <span class="status status--{{ o.order_status }}">{{ statusKey('track.status.', o.order_status) | t }}</span>
+                      <strong class="price">{{ o.grand_total | qar }}</strong>
+                    </span>
+                    <app-icon class="order__go" name="chevron-right" [size]="18" />
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="empty">
+              <app-icon name="bag" [size]="32" />
+              <p>{{ 'account.noOrders' | t }}</p>
+              <a routerLink="/shop" class="btn">{{ 'account.startShopping' | t }}</a>
+            </div>
+          }
+        } @else {
+          <p class="muted" role="status">{{ 'oc.loading' | t }}</p>
+        }
+      }
+
+      @case ('profile') {
+        <form class="panel" [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label for="ac-name">{{ 'co.fullName' | t }}</label>
+              <input id="ac-name" formControlName="full_name" autocomplete="name" [attr.aria-invalid]="invalid('profile', 'full_name')" />
+              @if (invalid('profile', 'full_name')) { <p class="field-error">{{ 'account.nameError' | t }}</p> }
+            </div>
+            <div class="field">
+              <label for="ac-email">{{ 'co.email' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label>
+              <input id="ac-email" type="email" formControlName="email" autocomplete="email" [attr.aria-invalid]="invalid('profile', 'email')" />
+              @if (invalid('profile', 'email')) { <p class="field-error">{{ 'co.emailError' | t }}</p> }
+            </div>
+            <div class="field">
+              <label for="ac-phone">{{ 'co.mobile' | t }}</label>
+              <input id="ac-phone" class="ltr" [value]="prettyPhone(c.phone)" disabled />
+              <p class="hint">{{ 'account.phoneLocked' | t }}</p>
+            </div>
+          </div>
+
+          <h2 class="sub">{{ 'account.savedAddress' | t }}</h2>
+          <p class="hint">{{ 'account.savedAddressHint' | t }}</p>
+          <div class="field">
+            <label for="ac-area">{{ 'co.area' | t }}</label>
+            <app-select inputId="ac-area" formControlName="area" size="lg" [searchable]="true" [options]="areaOptions()"
+              [placeholder]="'co.areaPlaceholder' | t" [searchPlaceholder]="'co.areaSearch' | t" [emptyText]="'common.noMatches' | t" />
+          </div>
+          <div class="grid-3">
+            <div class="field"><label for="ac-zone">{{ 'co.zone' | t }}</label><input id="ac-zone" formControlName="zone" inputmode="numeric" /></div>
+            <div class="field"><label for="ac-street">{{ 'co.street' | t }}</label><input id="ac-street" formControlName="street" /></div>
+            <div class="field"><label for="ac-building">{{ 'co.building' | t }}</label><input id="ac-building" formControlName="building" /></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label for="ac-unit">{{ 'co.unit' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label><input id="ac-unit" formControlName="unit" /></div>
+            <div class="field"><label for="ac-landmark">{{ 'co.landmark' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label>
+              <input id="ac-landmark" formControlName="landmark" [placeholder]="'co.landmarkPlaceholder' | t" /></div>
+          </div>
+          <div class="field">
+            <label for="ac-instr">{{ 'co.instructions' | t }} <span class="muted">{{ 'common.optional' | t }}</span></label>
+            <textarea id="ac-instr" rows="2" formControlName="instructions" [placeholder]="'co.instructionsPlaceholder' | t"></textarea>
+          </div>
+          <button type="submit" class="btn btn--lg" [disabled]="savingProfile()">{{ (savingProfile() ? 'account.saving' : 'account.save') | t }}</button>
+        </form>
+      }
+
+      @case ('password') {
+        <form class="panel narrow" [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
+          @if (passwordError(); as e) {
+            <p class="alert alert--error" role="alert">{{ e }}</p>
+          }
+          <div class="field">
+            <label for="ac-current">{{ 'account.currentPassword' | t }}</label>
+            <input id="ac-current" [type]="showPassword() ? 'text' : 'password'" formControlName="current_password" autocomplete="current-password"
+              [attr.aria-invalid]="invalid('password', 'current_password')" />
+          </div>
+          <div class="field">
+            <label for="ac-new">{{ 'account.newPassword' | t }}</label>
+            <input id="ac-new" [type]="showPassword() ? 'text' : 'password'" formControlName="new_password" autocomplete="new-password"
+              [attr.aria-invalid]="invalid('password', 'new_password')" />
+            @if (invalid('password', 'new_password')) {
+              <p class="field-error">{{ 'account.passwordError' | t }}</p>
+            } @else {
+              <p class="hint">{{ 'account.passwordHint' | t }}</p>
+            }
+          </div>
+          <label class="check"><input type="checkbox" [checked]="showPassword()" (change)="showPassword.set(!showPassword())" /> {{ 'account.show' | t }}</label>
+          <button type="submit" class="btn btn--lg" [disabled]="savingPassword()">{{ (savingPassword() ? 'account.saving' : 'account.changePassword') | t }}</button>
+        </form>
+      }
+    }
+  }
+</div>

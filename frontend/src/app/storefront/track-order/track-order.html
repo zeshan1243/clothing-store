@@ -1,0 +1,124 @@
+<div class="container page narrow">
+  @switch (state()) {
+    @case ('form') {
+      <header class="head">
+        <span class="head__icon" aria-hidden="true"><app-icon name="truck" [size]="28" /></span>
+        <h1>{{ 'track.title' | t }}</h1>
+        <p class="muted">{{ 'track.intro' | t }}</p>
+      </header>
+
+      <form class="card form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        @if (formError(); as e) {
+          <p class="alert alert--error" role="alert">{{ e }}</p>
+        }
+        <div class="field">
+          <label for="order-number">{{ 'track.orderNumber' | t }}</label>
+          <input id="order-number" class="ltr code" formControlName="order_number" autocomplete="off" autocapitalize="characters"
+            spellcheck="false" placeholder="ORD-2026-00012" dir="ltr"
+            [attr.aria-invalid]="invalid('order_number')" aria-describedby="order-hint" />
+          @if (invalid('order_number')) {
+            <p class="field-error" id="order-hint">{{ 'track.orderError' | t }}</p>
+          } @else {
+            <p class="hint" id="order-hint">{{ 'track.orderHint' | t }}</p>
+          }
+        </div>
+        <div class="field">
+          <label for="track-phone">{{ 'co.mobile' | t }}</label>
+          <div class="phone" dir="ltr">
+            <span class="phone__prefix" aria-hidden="true">+974</span>
+            <input id="track-phone" type="tel" inputmode="tel" formControlName="phone" autocomplete="tel-national"
+              placeholder="5512 3456" [attr.aria-invalid]="invalid('phone')" />
+          </div>
+          @if (invalid('phone')) {
+            <p class="field-error">{{ 'co.mobileError' | t }}</p>
+          }
+        </div>
+        <button type="submit" class="btn btn--lg btn--block" [disabled]="searching()">
+          {{ (searching() ? 'track.searching' : 'track.submit') | t }}
+        </button>
+      </form>
+
+      <p class="help muted">
+        {{ 'track.help' | t }}
+        <a [href]="whatsappLink()" target="_blank" rel="noopener">{{ 'track.helpText' | t }}</a>
+      </p>
+    }
+    @case ('loading') {
+      <p class="muted" role="status">{{ 'oc.loading' | t }}</p>
+    }
+    @case ('not-found') {
+      <h1>{{ 'oc.notFound' | t }}</h1>
+      <p>{{ 'oc.notFoundText' | t }}</p>
+      <a routerLink="/track" class="btn">{{ 'track.another' | t }}</a>
+    }
+    @case ('error') {
+      <p class="alert alert--error" role="alert">{{ 'oc.loadError' | t }}</p>
+    }
+    @case ('ready') {
+      @let o = order()!;
+      <header class="status" [class.status--off]="offTrack()" [class.status--done]="o.order_status === 'DELIVERED'">
+        <p class="overline">
+          <span class="ltr">{{ o.order_number }}</span> · {{ 'track.placedOn' | t: { date: (o.created_at | localDate) } }}
+        </p>
+        <h1>{{ statusKey('track.status.', o.order_status) | t }}</h1>
+        <p class="status__desc">{{ statusKey('track.desc.', o.order_status) | t: { total: (o.grand_total | qar) } }}</p>
+      </header>
+
+      <section class="card" [attr.aria-label]="'track.progress' | t">
+        <ol class="steps" [class.steps--off]="offTrack()">
+          @for (s of steps(); track s.status) {
+            <li class="step" [class.is-done]="s.done" [class.is-current]="s.current" [attr.aria-current]="s.current ? 'step' : null">
+              <span class="step__dot" aria-hidden="true">
+                <app-icon [name]="s.done ? 'check' : s.icon" [size]="16" />
+              </span>
+              <div class="step__text">
+                <p class="step__label">{{ s.label | t }}</p>
+                @if (s.at) {
+                  <p class="step__time">{{ s.at | localDate }}</p>
+                }
+              </div>
+            </li>
+          }
+        </ol>
+      </section>
+
+      <section class="card">
+        <div class="card__head">
+          <h2>{{ 'oc.yourOrder' | t }}</h2>
+          <span class="pay-pill" [class.is-paid]="o.payment_status === 'PAID'">
+            <app-icon name="banknote" [size]="16" /> {{ statusKey('track.pay.', o.payment_status) | t }}
+          </span>
+        </div>
+        <ul class="lines">
+          @for (item of o.items; track item.sku) {
+            <li class="line">
+              @if (item.image_url) {
+                <img [src]="item.image_url" alt="" width="56" height="70" loading="lazy" />
+              }
+              <div>
+                <p class="line__name">{{ item | loc: 'product_name' }}</p>
+                <p class="muted small">{{ item.colour }} · {{ item.size }} · {{ item.quantity }} × {{ item.unit_price | qar }}</p>
+              </div>
+              <p class="price">{{ item.line_total | qar }}</p>
+            </li>
+          }
+        </ul>
+        <dl class="totals">
+          <div><dt>{{ 'common.subtotal' | t }}</dt><dd class="price">{{ o.subtotal | qar }}</dd></div>
+          @if (+o.discount_amount > 0) {
+            <div class="discount"><dt>{{ 'coupon.discountCode' | t: { code: o.coupon_code ?? '' } }}</dt><dd class="price">−{{ o.discount_amount | qar }}</dd></div>
+          }
+          <div><dt>{{ 'common.delivery' | t }} · {{ o.delivery_area }}</dt><dd class="price">{{ +o.delivery_fee ? (o.delivery_fee | qar) : ('common.free' | t) }}</dd></div>
+          <div class="totals__grand"><dt>{{ 'common.total' | t }}</dt><dd class="price">{{ o.grand_total | qar }}</dd></div>
+        </dl>
+      </section>
+
+      <div class="actions">
+        <a [href]="whatsappLink()" target="_blank" rel="noopener" class="btn btn--secondary btn--lg">
+          <app-icon name="message" /> {{ 'track.question' | t }}
+        </a>
+        <a routerLink="/track" class="btn btn--ghost btn--lg">{{ 'track.another' | t }}</a>
+      </div>
+    }
+  }
+</div>

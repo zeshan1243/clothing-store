@@ -1,0 +1,80 @@
+<div class="container page narrow">
+  @switch (state()) {
+    @case ('loading') {
+      <p class="muted" role="status">{{ 'oc.loading' | t }}</p>
+    }
+    @case ('not-found') {
+      <h1>{{ 'oc.notFound' | t }}</h1>
+      <p>{{ 'oc.notFoundText' | t }}</p>
+      <a routerLink="/pages/contact" class="btn btn--secondary">{{ 'common.contactUs' | t }}</a>
+    }
+    @case ('error') {
+      <p class="alert alert--error" role="alert">{{ 'oc.loadError' | t }}</p>
+    }
+    @case ('ready') {
+      @let o = order()!;
+      <section class="hero" aria-labelledby="thanks">
+        <span class="tick" aria-hidden="true"><app-icon name="check" [size]="36" /></span>
+        <h1 id="thanks">{{ 'oc.placed' | t }}</h1>
+        <p class="muted">{{ 'oc.thanks' | t: { name: o.customer_first_name } }}</p>
+        <button type="button" class="ref" (click)="copyReference()" [attr.aria-label]="'oc.copyLabel' | t: { ref: o.order_number }">
+          <span class="ref__num ltr">{{ o.order_number }}</span>
+          <span class="ref__copy"><app-icon [name]="copied() ? 'check' : 'copy'" [size]="16" /> {{ (copied() ? 'oc.copied' : 'oc.copy') | t }}</span>
+        </button>
+      </section>
+
+      <div class="next">
+        <app-icon name="phone" [size]="22" />
+        <p><strong>{{ 'oc.next' | t }}</strong> {{ 'oc.nextText' | t: { area: o.delivery_area } }}</p>
+      </div>
+
+      <section class="card" aria-labelledby="items-heading">
+        <div class="card__head">
+          <h2 id="items-heading">{{ 'oc.yourOrder' | t }}</h2>
+          <span class="muted small">{{ o.created_at | localDate }}</span>
+        </div>
+        <ul class="lines">
+          @for (item of o.items; track item.sku) {
+            <li class="line">
+              @if (item.image_url) {
+                <img [src]="item.image_url" alt="" width="56" height="70" />
+              }
+              <div>
+                <p class="line__name">{{ item | loc: 'product_name' }}</p>
+                <p class="muted small">{{ item.colour }} · {{ item.size }} · {{ item.quantity }} × {{ item.unit_price | qar }}</p>
+              </div>
+              <p class="price">{{ item.line_total | qar }}</p>
+            </li>
+          }
+        </ul>
+        <dl class="totals">
+          <div><dt>{{ 'common.subtotal' | t }}</dt><dd class="price">{{ o.subtotal | qar }}</dd></div>
+          @if (+o.discount_amount > 0) {
+            <div class="discount"><dt>{{ 'coupon.discountCode' | t: { code: o.coupon_code ?? '' } }}</dt><dd class="price">−{{ o.discount_amount | qar }}</dd></div>
+          }
+          <div><dt>{{ 'common.delivery' | t }}</dt><dd class="price">{{ +o.delivery_fee ? (o.delivery_fee | qar) : ('common.free' | t) }}</dd></div>
+          <div class="totals__grand"><dt>{{ 'oc.totalPayable' | t }}</dt><dd class="price">{{ o.grand_total | qar }}</dd></div>
+        </dl>
+        <p class="pay"><app-icon name="banknote" [size]="18" /><span>{{ 'oc.payment' | t }} <strong>{{ 'common.cod' | t }}</strong> {{ 'oc.payReady' | t: { total: (o.grand_total | qar) } }}</span></p>
+      </section>
+
+      <div class="actions">
+        <a routerLink="/shop" class="btn btn--lg">{{ 'common.continueShopping' | t }}</a>
+        <a [routerLink]="['/track', o.public_token]" class="btn btn--secondary btn--lg"><app-icon name="truck" /> {{ 'oc.track' | t }}</a>
+        <a [href]="whatsappLink()" target="_blank" rel="noopener" class="btn btn--secondary btn--lg"><app-icon name="message" /> {{ 'oc.messageWhatsapp' | t }}</a>
+      </div>
+      <p class="muted small center">{{ 'oc.tip' | t }}</p>
+
+      @if (!account.signedIn()) {
+        <section class="join">
+          <span class="join__icon" aria-hidden="true"><app-icon name="user" [size]="22" /></span>
+          <div>
+            <h2>{{ 'oc.createTitle' | t }}</h2>
+            <p class="muted">{{ 'oc.createText' | t }}</p>
+          </div>
+          <a class="btn btn--secondary" routerLink="/account/register" [queryParams]="{ name: o.customer_first_name }">{{ 'account.create' | t }}</a>
+        </section>
+      }
+    }
+  }
+</div>

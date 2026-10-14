@@ -1,0 +1,112 @@
+<div class="page-head"><h1>Inventory</h1></div>
+
+<form class="filters" (ngSubmit)="load()">
+  <label class="visually-hidden" for="inv-search">Search</label>
+  <input id="inv-search" type="search" name="q" placeholder="Search product or SKU" [(ngModel)]="q" />
+  <label><input type="checkbox" name="low" [(ngModel)]="lowStockOnly" (ngModelChange)="load()" /> Low stock only</label>
+  <button type="submit" class="btn btn--secondary btn--small">Search</button>
+</form>
+
+@if (error(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+}
+
+<p class="muted small">Available = on hand − reserved by open orders.</p>
+
+<div class="layout" [class.layout--split]="selected()">
+  <div class="inv-list">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Product</th>
+          <th scope="col">SKU</th>
+          <th scope="col">Colour / size</th>
+          <th scope="col" class="num">On hand</th>
+          <th scope="col" class="num">Reserved</th>
+          <th scope="col" class="num">Available</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of visible(); track r.variant_id) {
+          <tr [class.is-selected]="selected()?.variant_id === r.variant_id" [class.is-inactive]="!r.is_active">
+            <td>
+              <a [routerLink]="['/admin/products', r.product_id]">{{ r.product_name }}</a>
+              @if (r.product_status !== 'ACTIVE') {
+                <span class="status status--{{ r.product_status }}">{{ r.product_status }}</span>
+              }
+            </td>
+            <td>{{ r.sku }}</td>
+            <td>{{ r.colour }} / {{ r.size }} @if (!r.is_active) { <span class="muted">(inactive)</span> }</td>
+            <td class="num">{{ r.stock_quantity }}</td>
+            <td class="num">{{ r.reserved_quantity }}</td>
+            <td class="num">
+              {{ r.available_quantity }}
+              @if (r.is_low_stock) {
+                <span class="status status--low">Low</span>
+              }
+            </td>
+            <td><button type="button" class="btn btn--secondary btn--small" (click)="open(r)">Adjust</button></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty-state">{{ loading() ? 'Loading…' : 'No variants found.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-pager [total]="rows().length" [page]="page()" [pageSize]="pageSize()" (pageChange)="page.set($event)"
+    (pageSizeChange)="pageSize.set($event); page.set(1)" />
+  </div>
+
+  @if (selected(); as s) {
+    <aside class="panel side" aria-labelledby="adjust-heading">
+      <div class="side__head">
+        <h2 id="adjust-heading">{{ s.product_name }}</h2>
+        <button type="button" class="btn btn--secondary btn--small" (click)="close()" aria-label="Close">✕</button>
+      </div>
+      <p class="muted">{{ s.sku }} · {{ s.colour }} / {{ s.size }}</p>
+      <p>On hand <strong>{{ s.stock_quantity }}</strong> · Reserved <strong>{{ s.reserved_quantity }}</strong> · Available <strong>{{ s.available_quantity }}</strong></p>
+
+      <form [formGroup]="adjustForm" (ngSubmit)="submitAdjustment()" novalidate>
+        @if (adjustError(); as e) {
+          <p class="alert alert--error" role="alert">{{ e }}</p>
+        }
+        <div class="field">
+          <label for="adj-type">Type</label>
+          <app-select inputId="adj-type" formControlName="movement_type" [options]="adjustTypeOptions()" />
+          @for (t of adjustTypes; track t.value) {
+            @if (t.value === adjustForm.controls.movement_type.value) {
+              <p class="muted small hint">{{ t.hint }}</p>
+            }
+          }
+        </div>
+        <div class="field">
+          <label for="adj-qty">Quantity change</label>
+          <input id="adj-qty" type="number" step="1" formControlName="quantity_change" />
+        </div>
+        <div class="field">
+          <label for="adj-reason">Reason</label>
+          <input id="adj-reason" formControlName="reason" placeholder="e.g. Shipment from supplier, recount" />
+        </div>
+        <button type="submit" class="btn btn--small" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Record adjustment' }}</button>
+      </form>
+
+      <h3 class="history-title">History</h3>
+      <ul class="history">
+        @for (m of movements(); track m.id) {
+          <li>
+            <span class="history__change" [class.neg]="m.quantity_change < 0">{{ m.quantity_change > 0 ? '+' : '' }}{{ m.quantity_change }}</span>
+            <span>
+              <strong>{{ m.movement_type }}</strong> — {{ m.reason ?? '' }}
+              <br />
+              <span class="muted small">{{ m.created_at | date: 'dd MMM yyyy, HH:mm' }} · {{ m.created_by_name ?? 'System' }}</span>
+            </span>
+          </li>
+        } @empty {
+          <li class="muted">No movements yet.</li>
+        }
+      </ul>
+    </aside>
+  }
+</div>

@@ -1,0 +1,143 @@
+.section-title {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  &.is-loading {
+    opacity: 0.6;
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  text-decoration: none;
+
+  &--link:hover {
+    border-color: var(--color-primary);
+  }
+
+  &--alert {
+    border-color: #2563eb;
+    box-shadow: inset 4px 0 0 #2563eb;
+  }
+
+  &--warn {
+    box-shadow: inset 4px 0 0 var(--color-warning);
+  }
+
+  &--good {
+    box-shadow: inset 4px 0 0 var(--color-success);
+  }
+
+  &__value {
+    font-size: 1.375rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__label {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+}
+
+.period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+
+  .section-title {
+    margin: 0;
+  }
+
+  .filters {
+    margin: 0;
+  }
+
+  &__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+}
+
+.chip {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  &--active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-primary-text);
+  }
+}
+
+.period + .cards {
+  margin-top: var(--space-3);
+}
+
+.definitions {
+  margin: var(--space-3) 0 var(--space-6);
+  font-size: 0.875rem;
+
+  summary {
+    cursor: pointer;
+    text-decoration: underline;
+  }
+}
+
+.two-col {
+  display: grid;
+  gap: var(--space-4);
+
+  @media (min-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .status {
+    float: right;
+  }
+}

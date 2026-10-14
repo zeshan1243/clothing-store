@@ -1,0 +1,115 @@
+<!-- First screen: hero fills the viewport with the trust strip pinned to its bottom edge. -->
+<div class="fold">
+  <app-hero class="fold__hero" [products]="featured() ?? []" />
+
+  <section class="trust" [attr.aria-label]="'home.trustLabel' | t">
+    <ul class="container trust__list">
+      @for (t of trust; track t.title; let i = $index) {
+        <li appReveal [style.transition-delay.ms]="i * 80">
+          <span class="trust__icon"><app-icon [name]="t.icon" [size]="22" /></span>
+          <span><strong>{{ t.title | t }}</strong><br /><span class="muted">{{ t.text | t }}</span></span>
+        </li>
+      }
+    </ul>
+  </section>
+</div>
+
+@if (error()) {
+  <div class="container section">
+    <p class="alert alert--error" role="alert">{{ 'home.loadError' | t }}</p>
+  </div>
+}
+
+<section class="section" aria-labelledby="new-heading">
+  <div class="container section__head">
+    <h2 id="new-heading">{{ 'home.newArrivals' | t }}</h2>
+    <a routerLink="/shop" [queryParams]="{ new: 1 }" class="section__link">{{ 'common.viewAll' | t }} <app-icon name="arrow-right" [size]="16" /></a>
+  </div>
+  <div class="container">
+    <div class="rail">
+      @if (newArrivals(); as items) {
+        @for (p of items; track p.id; let i = $index) {
+          <app-product-card [product]="p" [eager]="i < 2" />
+        }
+      } @else {
+        <app-product-card-skeleton [count]="4" />
+      }
+    </div>
+  </div>
+</section>
+
+@if (collections().length) {
+  <section class="section container" aria-labelledby="col-heading">
+    <div class="section__head section__head--flush">
+      <h2 id="col-heading">{{ 'common.collections' | t }}</h2>
+      <a routerLink="/collections" class="section__link">{{ 'common.viewAll' | t }} <app-icon name="arrow-right" [size]="16" /></a>
+    </div>
+    <ul class="collections" [class.collections--solo]="collections().length === 1">
+      @for (c of collections(); track c.id; let first = $first) {
+        <li appReveal [class.collections__hero]="first && collections().length !== 2">
+          <app-collection-card [collection]="c" [hero]="first && collections().length !== 2" />
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+@if (categories().length) {
+  <section class="section container" aria-labelledby="cat-heading">
+    <div class="section__head section__head--flush">
+      <h2 id="cat-heading">{{ 'home.shopByCategory' | t }}</h2>
+    </div>
+    <ul class="tiles">
+      @for (c of categories(); track c.id; let i = $index) {
+        <li appReveal>
+          <a class="tile" [class.tile--light]="!c.cover_image_url && i % 3 === 1" [class.tile--photo]="!!c.cover_image_url"
+            [routerLink]="['/shop', c.slug]">
+            @if (c.cover_image_url) {
+              <img class="tile__img" [src]="c.cover_image_url" alt="" loading="lazy" width="600" height="750" />
+            }
+            <span class="tile__name">{{ c | loc: 'name' }}</span>
+            @if (c.description) {
+              <span class="tile__desc">{{ c | loc: 'description' }}</span>
+            }
+            <span class="tile__go"><app-icon name="arrow-right" [size]="22" /></span>
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+<section class="drop" aria-labelledby="drop-heading">
+  <div class="container drop__inner" appReveal>
+    <p class="overline drop__live"><span class="dot" aria-hidden="true"></span> {{ 'home.dropLive' | t }}</p>
+    <h2 id="drop-heading" class="drop__title">
+      @for (line of dropTitle(); track line; let last = $last) { {{ line }}@if (!last) { <br /> } }
+    </h2>
+    <a routerLink="/shop" [queryParams]="{ new: 1 }" class="btn btn--volt btn--lg">{{ 'hero.cta' | t }} <app-icon name="arrow-right" [size]="18" /></a>
+  </div>
+  <div class="band" aria-hidden="true">
+    <div class="band__track">
+      @for (copy of [0, 1, 2, 3]; track copy) {
+        <span>{{ 'home.band' | t }}</span>
+      }
+    </div>
+  </div>
+</section>
+
+@if (featured() === null || featured()!.length) {
+  <section class="section container" aria-labelledby="best-heading">
+    <div class="section__head section__head--flush">
+      <h2 id="best-heading">{{ 'home.bestSellers' | t }}</h2>
+      <a routerLink="/shop" class="section__link">{{ 'common.shopAll' | t }} <app-icon name="arrow-right" [size]="16" /></a>
+    </div>
+    <div class="product-grid">
+      @if (featured(); as items) {
+        @for (p of items; track p.id) {
+          <app-product-card [product]="p" appReveal />
+        }
+      } @else {
+        <app-product-card-skeleton [count]="8" />
+      }
+    </div>
+  </section>
+}

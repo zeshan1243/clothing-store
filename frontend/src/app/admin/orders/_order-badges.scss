@@ -1,0 +1,80 @@
+// Status pill colours (design.md §10.5). Always paired with a text label.
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  background: #ececef;
+  color: var(--ink-600);
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &--PLACED {
+    background: #ececef;
+    color: #4a4a52;
+  }
+
+  &--CONFIRMED {
+    background: #e0ecff;
+    color: #1d5bd8;
+  }
+
+  &--PREPARING {
+    background: #fff1d6;
+    color: #a35f00;
+  }
+
+  &--OUT_FOR_DELIVERY {
+    background: #efe6ff;
+    color: #6b2fd6;
+  }
+
+  &--DELIVERED {
+    background: #dcf5e8;
+    color: #137a50;
+  }
+
+  &--CANCELLED {
+    background: #fde4e4;
+    color: #c4282d;
+  }
+
+  &--DELIVERY_FAILED,
+  &--RETURN_REQUESTED {
+    background: transparent;
+    border-color: #e5484d;
+    color: #c4282d;
+  }
+}
+
+.pay--PENDING {
+  background: transparent;
+  border-color: #f5a524;
+  color: #a35f00;
+}
+
+.pay--PAID {
+  background: #dcf5e8;
+  color: #137a50;
+}
+
+.pay--PARTIALLY_REFUNDED,
+.pay--REFUNDED {
+  background: transparent;
+  border-color: #8a8a94;
+  color: #4a4a52;
+}

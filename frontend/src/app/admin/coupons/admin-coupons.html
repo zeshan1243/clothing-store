@@ -1,0 +1,135 @@
+<div class="page-head">
+  <h1>Coupons</h1>
+  @if (!editing()) {
+    <button type="button" class="btn btn--small" (click)="startNew()">Create coupon</button>
+  }
+</div>
+
+@if (error(); as e) {
+  <p class="alert alert--error" role="alert">{{ e }}</p>
+}
+
+@if (editing()) {
+  <form class="panel" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <h2>{{ isNew() ? 'New coupon' : 'Edit coupon' }}</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="c-code">Code</label>
+        <div class="code-row">
+          <input id="c-code" formControlName="code" class="code-input" autocomplete="off"
+            [attr.aria-invalid]="form.controls.code.touched && form.controls.code.invalid" />
+          @if (!form.controls.code.disabled) {
+            <button type="button" class="btn btn--secondary btn--small" (click)="generate()">Generate</button>
+          }
+        </div>
+        @if (form.controls.code.disabled) {
+          <p class="muted small">This code has been used, so it can't be renamed.</p>
+        }
+      </div>
+      <div class="field">
+        <label for="c-desc">Internal note <span class="muted">(optional)</span></label>
+        <input id="c-desc" formControlName="description" placeholder="e.g. Instagram launch giveaway" />
+      </div>
+
+      <fieldset class="field span-2 types">
+        <legend>Discount</legend>
+        <label class="type"><input type="radio" formControlName="discount_type" value="PERCENT" /> Percentage off</label>
+        <label class="type"><input type="radio" formControlName="discount_type" value="FIXED" /> Fixed amount off</label>
+        <label class="type"><input type="radio" formControlName="discount_type" value="FREE_DELIVERY" /> Free delivery</label>
+      </fieldset>
+
+      @if (type() === 'PERCENT') {
+        <div class="field">
+          <label for="c-value">Percentage</label>
+          <input id="c-value" formControlName="value" inputmode="decimal" placeholder="10" />
+        </div>
+        <div class="field">
+          <label for="c-max">Maximum discount (QAR) <span class="muted">(optional)</span></label>
+          <input id="c-max" formControlName="max_discount" inputmode="decimal" placeholder="e.g. 50" />
+        </div>
+      } @else if (type() === 'FIXED') {
+        <div class="field">
+          <label for="c-value">Amount off (QAR)</label>
+          <input id="c-value" formControlName="value" inputmode="decimal" placeholder="25" />
+        </div>
+      }
+      <div class="field">
+        <label for="c-min">Minimum order subtotal (QAR) <span class="muted">(optional)</span></label>
+        <input id="c-min" formControlName="min_subtotal" inputmode="decimal" placeholder="e.g. 200" />
+      </div>
+
+      <div class="field">
+        <label for="c-start">Starts <span class="muted">(Doha time, optional)</span></label>
+        <input id="c-start" type="datetime-local" formControlName="starts_at" />
+      </div>
+      <div class="field">
+        <label for="c-end">Ends <span class="muted">(Doha time, optional)</span></label>
+        <input id="c-end" type="datetime-local" formControlName="ends_at" />
+      </div>
+      <div class="field">
+        <label for="c-limit">Total uses <span class="muted">(blank = unlimited)</span></label>
+        <input id="c-limit" type="number" min="1" formControlName="usage_limit" />
+      </div>
+      <div class="field">
+        <label for="c-per">Uses per customer <span class="muted">(by phone; blank = unlimited)</span></label>
+        <input id="c-per" type="number" min="1" formControlName="per_customer_limit" />
+      </div>
+      <label class="checkbox"><input type="checkbox" formControlName="is_active" /> Active (customers can use it)</label>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn--small" [disabled]="saving()">{{ saving() ? 'Saving…' : (isNew() ? 'Create coupon' : 'Save changes') }}</button>
+      <button type="button" class="btn btn--secondary btn--small" (click)="editing.set(null)">Cancel</button>
+    </div>
+
+    @if (detail(); as d) {
+      <h3 class="sub">Used {{ d.times_used }} {{ d.times_used === 1 ? 'time' : 'times' }} · saved customers {{ d.total_savings | qar }}</h3>
+      @if (d.redemptions.length) {
+        <ul class="uses">
+          @for (r of d.redemptions; track r.order_id) {
+            <li [class.is-void]="r.voided">
+              <a [routerLink]="['/admin/orders', r.order_id]">{{ r.order_number }}</a>
+              <span>{{ r.customer_name }}</span>
+              <span class="muted">{{ r.created_at | date: 'd MMM, h:mm a' }}</span>
+              <span class="num">{{ r.discount_amount | qar }}</span>
+              @if (r.voided) { <span class="status">Cancelled</span> }
+            </li>
+          }
+        </ul>
+      }
+    }
+  </form>
+}
+
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Code</th>
+        <th scope="col">Offer</th>
+        <th scope="col">Rules</th>
+        <th scope="col" class="num">Uses</th>
+        <th scope="col" class="num">Saved</th>
+        <th scope="col">Status</th>
+        <th scope="col"><span class="visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of coupons(); track c.id) {
+        <tr>
+          <td><strong class="code">{{ c.code }}</strong>@if (c.description) { <br /><span class="muted small">{{ c.description }}</span> }</td>
+          <td>{{ describe(c) }}</td>
+          <td class="muted small">{{ rules(c) }}</td>
+          <td class="num">{{ c.times_used }}@if (c.usage_limit) { / {{ c.usage_limit }} }</td>
+          <td class="num">{{ c.total_savings | qar }}</td>
+          <td><span class="pill pill--{{ c.state }}">{{ stateLabels[c.state] }}</span></td>
+          <td class="row-actions">
+            <button type="button" class="btn btn--secondary btn--small" (click)="edit(c)">Edit</button>
+            <button type="button" class="btn btn--secondary btn--small" (click)="toggleActive(c)">{{ c.is_active ? 'Switch off' : 'Switch on' }}</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr><td colspan="7" class="empty-state">{{ loading() ? 'Loading…' : 'No coupons yet. Create one to share on Instagram or WhatsApp.' }}</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

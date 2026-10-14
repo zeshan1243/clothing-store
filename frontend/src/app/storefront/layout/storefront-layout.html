@@ -1,0 +1,131 @@
+<a class="skip-link" href="#main">{{ 'nav.skip' | t }}</a>
+
+@if (!minimal()) {
+  <div class="announce" role="region" [attr.aria-label]="'announce.label' | t">
+    <ul class="announce__list" [style.--i]="announcementIndex()">
+      @for (a of announcements; track a; let i = $index) {
+        <li [attr.aria-hidden]="i !== announcementIndex()">{{ a | t }}</li>
+      }
+    </ul>
+    <p class="announce__all" aria-hidden="true">
+      @for (a of announcements; track a; let last = $last) { {{ a | t }}@if (!last) { · } }
+    </p>
+  </div>
+}
+
+<header class="header" [class.header--hero]="overHero() && !scrolled() && !menuOpen()" [class.header--minimal]="minimal()">
+  <div class="container header__inner">
+    @if (!minimal()) {
+      <button type="button" class="icon-btn header__menu" [attr.aria-expanded]="menuOpen()" aria-controls="site-nav" (click)="toggleMenu()">
+        <app-icon [name]="menuOpen() ? 'x' : 'menu'" [size]="24" />
+        <span class="visually-hidden">{{ (menuOpen() ? 'nav.closeMenu' : 'nav.openMenu') | t }}</span>
+      </button>
+    }
+
+    <a routerLink="/" class="logo" (click)="closeMenu()">{{ brandName }}</a>
+
+    @if (!minimal()) {
+      <nav id="site-nav" class="nav" [class.nav--open]="menuOpen()" [attr.aria-label]="'nav.main' | t">
+        <ul>
+          @for (link of navLinks(); track link.label) {
+            <li>
+              <a [routerLink]="link.path" [queryParams]="link.query" routerLinkActive="is-active"
+                [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">{{ isKey(link.label) ? (link.label | t) : (link.label | loc: 'name') }}</a>
+            </li>
+          }
+        </ul>
+        <div class="nav__extra">
+          <a [href]="whatsappLink" target="_blank" rel="noopener" class="nav__wa"><app-icon name="message" /> {{ 'nav.whatsappUs' | t }}</a>
+          <button type="button" class="nav__lang" (click)="switchLanguage()" [attr.lang]="i18n.isArabic() ? 'en' : 'ar'">{{ 'lang.switch' | t }}</button>
+          <button type="button" class="nav__lang nav__theme" (click)="theme.toggle()">
+            <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="18" /> {{ (theme.isDark() ? 'theme.light' : 'theme.dark') | t }}
+          </button>
+        </div>
+      </nav>
+
+      <div class="header__actions">
+        <button type="button" class="lang-btn" (click)="switchLanguage()" [attr.aria-label]="'lang.switchLabel' | t"
+          [attr.lang]="i18n.isArabic() ? 'en' : 'ar'">{{ 'lang.switch' | t }}</button>
+        <button type="button" class="icon-btn theme-btn" (click)="theme.toggle()" [attr.aria-pressed]="theme.isDark()"
+          [attr.aria-label]="(theme.isDark() ? 'theme.light' : 'theme.dark') | t">
+          <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="20" />
+        </button>
+        <button type="button" class="icon-btn" (click)="openSearch()">
+          <app-icon name="search" [size]="22" />
+          <span class="visually-hidden">{{ 'common.search' | t }}</span>
+        </button>
+        <a [routerLink]="account.signedIn() ? '/account' : '/account/login'" class="icon-btn account-btn" (click)="closeMenu()"
+          [class.is-signed-in]="account.signedIn()">
+          <app-icon name="user" [size]="22" />
+          <span class="visually-hidden">{{ (account.signedIn() ? 'account.title' : 'account.signIn') | t }}</span>
+        </a>
+        <a routerLink="/cart" class="icon-btn cart-btn" (click)="closeMenu()">
+          <app-icon name="bag" [size]="22" />
+          <span class="visually-hidden">{{ 'nav.cartItems' | t: { n: cart.count() } }}</span>
+          @if (cart.count()) {
+            <span class="cart-count" aria-hidden="true">{{ cart.count() }}</span>
+          }
+        </a>
+      </div>
+    } @else {
+      <a routerLink="/cart" class="back-link"><app-icon name="chevron-left" [size]="18" /> {{ 'nav.backToCart' | t }}</a>
+    }
+  </div>
+</header>
+
+<main id="main" tabindex="-1" [class.main--hero]="overHero()">
+  <router-outlet />
+</main>
+
+@if (!minimal()) {
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <a routerLink="/" class="logo logo--footer">{{ brandName }}</a>
+          <p>{{ 'footer.tagline' | t }}</p>
+          <p class="footer__cod"><app-icon name="banknote" /> {{ 'common.cod' | t }}</p>
+        </div>
+        @for (group of footerGroups; track group.title) {
+          <section>
+            <h2 class="overline">{{ group.title | t }}</h2>
+            <ul>
+              @for (link of group.links; track link.label) {
+                <li><a [routerLink]="link.path" [queryParams]="link.query">{{ isKey(link.label) ? (link.label | t) : (link.label | loc: 'name') }}</a></li>
+              }
+            </ul>
+          </section>
+        }
+        <section>
+          <h2 class="overline">{{ 'footer.contact' | t }}</h2>
+          <ul>
+            <li><a [href]="whatsappLink" target="_blank" rel="noopener">{{ 'nav.whatsappUs' | t }}</a></li>
+            <li><a routerLink="/pages/contact">{{ 'footer.phoneEmail' | t }}</a></li>
+            <!-- TODO(launch): real social links -->
+            <li><a href="https://instagram.com/" target="_blank" rel="noopener">{{ 'footer.instagram' | t }}</a></li>
+            <li><button type="button" class="footer__lang" (click)="switchLanguage()" [attr.lang]="i18n.isArabic() ? 'en' : 'ar'">{{ 'lang.switch' | t }}</button></li>
+            <li><button type="button" class="footer__lang" (click)="theme.toggle()">{{ (theme.isDark() ? 'theme.light' : 'theme.dark') | t }}</button></li>
+          </ul>
+        </section>
+      </div>
+      <p class="footer__legal">{{ 'footer.legal' | t: { year: year, brand: brandName } }}</p>
+    </div>
+  </footer>
+}
+
+<app-sheet [heading]="'search.title' | t" [open]="searchOpen()" side="center" (closed)="searchOpen.set(false)">
+  <form class="search" role="search" (ngSubmit)="submitSearch()">
+    <label for="site-search" class="visually-hidden">{{ 'search.label' | t }}</label>
+    <app-icon name="search" />
+    <input #searchInput id="site-search" type="search" name="q" [placeholder]="'search.placeholder' | t" [(ngModel)]="searchText" autocomplete="off" />
+    <button type="submit" class="btn">{{ 'common.search' | t }}</button>
+  </form>
+  <div class="search__suggest">
+    <p class="overline muted">{{ 'search.popular' | t }}</p>
+    @for (s of popularSearches; track s) {
+      <button type="button" class="chip" (click)="searchFor(s)">{{ s | t }}</button>
+    }
+  </div>
+</app-sheet>
+
+<app-mini-cart />
