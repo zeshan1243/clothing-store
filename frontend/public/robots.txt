@@ -5,4 +5,4 @@ Disallow: /cart
 Disallow: /checkout
 Disallow: /order/
 
-Sitemap: https://www.example.com/sitemap.xml
+Sitemap: https://clothing-store-web.onrender.com/sitemap.xml

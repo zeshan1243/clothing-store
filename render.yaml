@@ -1,0 +1,81 @@
+# Render Blueprint: PostgreSQL + FastAPI API + Angular static site.
+# Dashboard → New → Blueprint → pick this repo. See DEPLOYMENT.md ("Render") for the steps.
+#
+# Service names become the public URLs (https://<name>.onrender.com). If Render reports a name is
+# taken, change it here AND in: frontend/src/environments/environment.ts, CORS_ORIGINS / SITE_URL
+# below, and frontend/public/robots.txt.
+
+databases:
+  - name: clothing-store-db
+    plan: free            # free Postgres expires 30 days after creation, no backups — not for real orders
+    region: frankfurt     # closest Render region to Qatar; must match the API's region
+    databaseName: clothing_store
+    user: clothing_store
+
+services:
+  - type: web
+    name: clothing-store-api
+    runtime: docker
+    plan: free            # sleeps after 15 min idle; the first request after that takes ~1 minute
+    region: frankfurt
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: clothing-store-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://clothing-store-web.onrender.com
+      - key: SITE_URL
+        value: https://clothing-store-web.onrender.com
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: BUSINESS_NAME
+        value: Brand Name
+      - key: BUSINESS_ADDRESS
+        value: Doha, Qatar
+
+  - type: web
+    name: clothing-store-web
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist/frontend/browser
+    buildFilter:
+      paths:
+        - frontend/**
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+    routes:
+      - type: rewrite
+        source: /sitemap.xml
+        destination: https://clothing-store-api.onrender.com/api/v1/seo/sitemap.xml
+      # Single-page app fallback: every other route is handled by Angular.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://placehold.co; connect-src 'self' https://clothing-store-api.onrender.com; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache

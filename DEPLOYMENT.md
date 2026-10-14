@@ -15,6 +15,32 @@ Suggested domains: `www.brand.qa` for the storefront, `api.brand.qa` for the API
 
 ---
 
+## Render (Blueprint)
+
+[render.yaml](render.yaml) defines all three pieces: `clothing-store-db` (Postgres),
+`clothing-store-api` (Docker, from `backend/`) and `clothing-store-web` (static site, with the SPA
+fallback, sitemap proxy and security headers that `_redirects`/`_headers` provide elsewhere).
+
+1. Push the repo to GitHub.
+2. Render dashboard → **New → Blueprint** → select the repo → **Apply**.
+3. Check the URLs Render assigned. If either differs from `https://clothing-store-api.onrender.com` /
+   `https://clothing-store-web.onrender.com`, update `render.yaml`, `environment.ts` and `robots.txt`,
+   then push again.
+4. Create an admin account. The free plan has no Shell, so run it locally against the database's
+   **External Database URL** (database page → Connections):
+   ```bash
+   cd backend
+   DATABASE_URL='postgresql://...external-url...' .venv/bin/python -m scripts.create_admin \
+     --email you@example.com --name "Your Name" --owner
+   ```
+5. Visit `https://clothing-store-api.onrender.com/health`, then sign in at `/admin` on the site.
+
+Free plan limits: the API sleeps after 15 minutes idle (the next request takes about a minute), and
+the free database **expires 30 days after creation** and has no backups. Fine for a demo; upgrade the
+database (and ideally the API) before taking real orders.
+
+---
+
 ## 1. Database
 
 1. Create a PostgreSQL database and a dedicated user for the app.

@@ -2,7 +2,7 @@
 // brandName to the real brand.
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.example.com/api/v1',
+  apiBaseUrl: 'https://clothing-store-api.onrender.com/api/v1',
   brandName: 'Brand Name',
   currency: 'QAR',
   // Display only; the API calculates the authoritative delivery fee at checkout.
