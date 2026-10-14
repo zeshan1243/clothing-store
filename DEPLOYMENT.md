@@ -23,9 +23,10 @@ fallback, sitemap proxy and security headers that `_redirects`/`_headers` provid
 
 1. Push the repo to GitHub.
 2. Render dashboard → **New → Blueprint** → select the repo → **Apply**.
-3. Check the URLs Render assigned. If either differs from `https://clothing-store-api.onrender.com` /
-   `https://clothing-store-web.onrender.com`, update `render.yaml`, `environment.ts` and `robots.txt`,
-   then push again.
+3. Service names become `https://<name>.onrender.com`, but Render adds a suffix when a name is taken.
+   This deployment uses `https://clothing-store-api-ste1.onrender.com` (API) and
+   `https://clothing-store-web-5a63.onrender.com` (site); if they ever change, update `render.yaml`,
+   `environment.ts` and `robots.txt`, then push again.
 4. Create an admin account. The free plan has no Shell, so run it locally against the database's
    **External Database URL** (database page → Connections):
    ```bash
@@ -33,7 +34,7 @@ fallback, sitemap proxy and security headers that `_redirects`/`_headers` provid
    DATABASE_URL='postgresql://...external-url...' .venv/bin/python -m scripts.create_admin \
      --email you@example.com --name "Your Name" --owner
    ```
-5. Visit `https://clothing-store-api.onrender.com/health`, then sign in at `/admin` on the site.
+5. Visit `https://clothing-store-api-ste1.onrender.com/health`, then sign in at `/admin` on the site.
 
 Free plan limits: the API sleeps after 15 minutes idle (the next request takes about a minute), and
 the free database **expires 30 days after creation** and has no backups. Fine for a demo; upgrade the

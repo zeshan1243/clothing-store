@@ -31,9 +31,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://clothing-store-web.onrender.com
+        value: https://clothing-store-web-5a63.onrender.com
       - key: SITE_URL
-        value: https://clothing-store-web.onrender.com
+        value: https://clothing-store-web-5a63.onrender.com
       - key: WEB_CONCURRENCY
         value: "1"
       - key: BUSINESS_NAME
@@ -55,7 +55,7 @@ services:
     routes:
       - type: rewrite
         source: /sitemap.xml
-        destination: https://clothing-store-api.onrender.com/api/v1/seo/sitemap.xml
+        destination: https://clothing-store-api-ste1.onrender.com/api/v1/seo/sitemap.xml
       # Single-page app fallback: every other route is handled by Angular.
       - type: rewrite
         source: /*
@@ -75,7 +75,7 @@ services:
         value: camera=(), microphone=(), geolocation=()
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://placehold.co; connect-src 'self' https://clothing-store-api.onrender.com; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://placehold.co; connect-src 'self' https://clothing-store-api-ste1.onrender.com; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
       - path: /index.html
         name: Cache-Control
         value: no-cache
