@@ -75,7 +75,7 @@ services:
         value: camera=(), microphone=(), geolocation=()
       - path: /*
         name: Content-Security-Policy
-        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://placehold.co; connect-src 'self' https://clothing-store-api-ste1.onrender.com; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://res.cloudinary.com https://placehold.co https://images.unsplash.com https://plus.unsplash.com https://encrypted-tbn0.gstatic.com; connect-src 'self' https://clothing-store-api-ste1.onrender.com; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
       - path: /index.html
         name: Cache-Control
         value: no-cache
